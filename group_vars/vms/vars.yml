@@ -1,0 +1,13 @@
+---
+physical_interface_1: 'enp1s0'
+physical_interface_2: 'enp2s0'
+
+os_prepare_ps1: '\[\e[36;1m\]\u\[\e[34m\]@\h\[\e[0m\]:\[\e[34;1m\]\w\[\e[0m\]\$ '
+os_prepare_ipam_network_template: 'local-network-vm.j2'
+os_prepare_physical_interface: "{{ physical_interface_1 }}"
+os_prepare_ipv4_address: "{{ ipv4_address_1 }}"
+
+ip_direct_setup_ipam_network_template: 'direct-connection-vm.j2'
+ip_direct_setup_physical_interface: "{{ physical_interface_2 }}"
+ip_direct_setup_ipv4_address: "{{ ipv4_address_2 }}"
+...

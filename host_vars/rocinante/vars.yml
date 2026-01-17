@@ -4,7 +4,6 @@ physical_interface_1: 'enp2s0'
 physical_interface_2: 'enp3s0'
 bridge_interface_1: 'br0'
 bridge_interface_2: 'br1'
-ipv4_address_2: '10.255.255.242'
 libvirt_disk_pool_path: '/var/lib/libvirt/disks'
 base_disk: 'base.qcow2'
 # VM names are immutable identifiers. Renaming a VM in this list
@@ -55,7 +54,7 @@ vm_definitions:
     mac: "{{ vm_mac_prefix }}:05"
     autostart: false
 
-os_prepare_ps1: '\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;36m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+os_prepare_ps1: '\[\e[36;1m\]\u@\h\[\e[0m\]:\[\e[34;1m\]\w\[\e[0m\]\$ '
 os_prepare_ipam_network_template: 'local-network-hypervisor.j2'
 os_prepare_physical_interface: "{{ physical_interface_1 }}"
 os_prepare_bridge_interface: "{{ bridge_interface_1 }}"

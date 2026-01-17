@@ -5,7 +5,7 @@ os_prepare_ipv4_netmask: "{{ ipv4_netmask }}"
 os_prepare_ipv4_gateway: "{{ ipv4_gateway }}"
 
 
-ip_direct_setup_ipv4_netmask: '255.255.255.240'
+ip_direct_setup_ipv4_netmask: "{{ local_network_ipv4_netmask }}"
 ip_direct_setup_remote_local_ip: "{{ remote_device_local_ip }}"
-ip_direct_setup_remote_direct_ip: '10.255.255.241'
+ip_direct_setup_remote_direct_ip: "{{ remote_device_direct_ip }}"
 ...
