@@ -1,0 +1,13 @@
+# Direct connection interface
+iface {{ ip_direct_setup_physical_interface }} inet manual
+
+auto {{ ip_direct_setup_bridge_interface }}
+iface {{ ip_direct_setup_bridge_interface }} inet static
+    bridge_ports {{ ip_direct_setup_physical_interface }}
+    bridge_stp off
+    bridge_fd 0
+    bridge_maxwait 0
+    address {{ ip_direct_setup_ipv4_address }}
+    netmask {{ ip_direct_setup_ipv4_netmask }}
+    up ip route add {{ ip_direct_setup_remote_local_ip }}/32 via {{ ip_direct_setup_remote_direct_ip }} dev {{ ip_direct_setup_bridge_interface }}
+    down ip route del {{ ip_direct_setup_remote_local_ip }}/32 || true

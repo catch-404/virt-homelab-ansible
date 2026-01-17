@@ -1,0 +1,80 @@
+---
+- name: Install kvm/qemu/libvirt packages
+  ansible.builtin.apt:
+    name:
+      - qemu-system
+      - qemu-utils
+      - libvirt-clients
+      - libvirt-daemon-system
+      - bridge-utils
+      - virtinst
+      - ovmf
+    install_recommends: false
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  register: kvm_install_package_install
+  retries: 3
+  delay: 10
+  until: kvm_install_package_install is success
+
+- name: Add user to libvirt & kvm groups
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: "{{ item }}"
+    append: true
+    state: present
+  loop:
+    - "libvirt"
+    - "kvm"
+
+- name: Add LIBVIRT_DEFAULT_URI export in .bashrc
+  ansible.builtin.lineinfile:
+    path: "/home/{{ ansible_user }}/.bashrc"
+    regexp: "^export LIBVIRT_DEFAULT_URI"
+    line: "export LIBVIRT_DEFAULT_URI='qemu:///system'"
+    state: present
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+    backup: true
+
+- name: Change necessary sysctl values
+  ansible.builtin.copy:
+    src: '99-kvm.conf'
+    dest: '/etc/sysctl.d/99-kvm.conf'
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+  notify: Apply sysctl params
+
+- name: Create directories for new libvirt pools
+  ansible.builtin.file:
+    path: "/var/lib/libvirt/{{ item }}"
+    state: directory
+    owner: root
+    group: libvirt
+    mode: '0775'
+  loop:
+    - "isos"
+    - "disks"
+
+- name: Create and configure new libvirt pools
+  ansible.builtin.shell: |
+    virsh pool-define-as {{ item }} dir --target /var/lib/libvirt/{{ item }}
+    virsh pool-build {{ item }}
+    virsh pool-start {{ item }}
+    virsh pool-autostart {{ item }}
+  args:
+    creates: /etc/libvirt/storage/{{ item }}.xml
+  loop:
+    - "isos"
+    - "disks"
+
+- name: Enable and start libvirtd socket
+  ansible.builtin.systemd_service:
+    name: libvirtd.socket
+    state: started
+    enabled: true
+...

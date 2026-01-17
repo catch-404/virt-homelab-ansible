@@ -1,0 +1,12 @@
+---
+- name: Template interface-specific config files for direct connection
+  ansible.builtin.template:
+    src: "{{ ip_direct_setup_ipam_network_template }}"
+    dest: "/etc/network/interfaces.d/direct-connection"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+    validate: '/usr/sbin/ifup --no-act %s'
+  notify: Restart networking
+...

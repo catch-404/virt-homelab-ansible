@@ -1,0 +1,24 @@
+---
+- name: Create XML definitions directory
+  ansible.builtin.file:
+    path: "{{ vm_create_definitions_dir }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+    state: directory
+
+- name: Provision VMs
+  ansible.builtin.include_tasks: 'provision_vm.yml'
+  vars:
+    vm_name: "{{ item.name }}"
+    vm_template: "{{ item.template }}"
+    vm_xml: "{{ vm_create_definitions_dir }}/{{ vm_name }}.xml"
+    vm_mem: "{{ item.mem }}"
+    vm_cpus: "{{ item.cpus }}"
+    vm_disk: "{{ item.name }}.qcow2"
+    vm_disk_path: "{{ vm_create_libvirt_disk_pool_path }}/{{ vm_disk }}"
+    vm_mac: "{{ item.mac }}"
+    vm_extra_disks: "{{ item.extra_disks }}"
+    vm_autostart: "{{ item.autostart | default(true) }}"
+  loop: "{{ vm_create_definitions }}"
+...

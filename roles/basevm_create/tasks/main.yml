@@ -1,0 +1,153 @@
+---
+- name: Install ansible modules dependencies
+  ansible.builtin.apt:
+    name: python3-debian
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Map Ansible architecture to dpkg architecture
+  ansible.builtin.set_fact:
+    basevm_create_dpkg_architecture: "{{ arch_mapping[ansible_facts['architecture']] }}"
+  vars:
+    arch_mapping:
+      x86_64: amd64
+      aarch64: arm64
+
+- name: Add HashiCorp repository
+  ansible.builtin.deb822_repository:
+    name: 'hashicorp'
+    types: 'deb'
+    uris: "https://apt.releases.hashicorp.com"
+    suites: "{{ ansible_facts['distribution_release'] }}"
+    components: 'main'
+    architectures: "{{ basevm_create_dpkg_architecture }}"
+    signed_by: "https://apt.releases.hashicorp.com/gpg"
+    state: present
+    enabled: true
+  register: basevm_create_hashicorp_repo_added
+
+- name: Update APT cache
+  ansible.builtin.apt:
+    update_cache: true
+  when: basevm_create_hashicorp_repo_added is changed # noqa: no-handler
+
+- name: Install necessary packages
+  ansible.builtin.apt:
+    name:
+      - packer
+      - ovmf
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  register: basevm_create_package_install
+  retries: 3
+  delay: 10
+  until: basevm_create_package_install is success
+
+- name: Create libvirt disk pool directory if it doesn't already exist
+  ansible.builtin.file:
+    path: "{{ basevm_create_libvirt_output_path }}"
+    state: directory
+    owner: root
+    group: libvirt
+    mode: '0775'
+
+- name: Prepare packer directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+  loop:
+    - '{{ basevm_create_packer_root_dir }}'
+    - '{{ basevm_create_packer_root_dir }}/http'
+    - '{{ basevm_create_packer_root_dir }}/files'
+
+- name: Template packer files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+  loop:
+    - src: 'debian.pkr.hcl.j2'
+      dest: '{{ basevm_create_packer_root_dir }}/debian.pkr.hcl'
+    - src: 'preseed.cfg.j2'
+      dest: '{{ basevm_create_packer_root_dir }}/http/preseed.cfg'
+  register: basevm_create_packer_files_template
+
+- name: Copy packer files
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ basevm_create_packer_root_dir }}/files/{{ item }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+  loop:
+    - 'interfaces'
+    - 'authorized_keys'
+    - 'regenerate-ssh-keys.service'
+  register: basevm_create_packer_files_copy
+
+- name: Acknowledge packer config change
+  ansible.builtin.set_fact:
+    basevm_create_packer_config_changed: >-
+      {{ basevm_create_packer_files_template is changed or
+          basevm_create_packer_files_copy is changed }}
+
+- name: Check if base image exists (packer output path)
+  ansible.builtin.stat:
+    path: "{{ basevm_create_packer_image_full_path }}"
+  register: basevm_create_packer_output_image
+
+- name: Acknwoledge whether packer needs to build an image
+  ansible.builtin.set_fact:
+    basevm_create_build_needed: >-
+      {{ basevm_create_packer_config_changed or
+          not basevm_create_packer_output_image.stat.exists }}
+
+- name: Handle packer build process
+  when: basevm_create_build_needed
+  block:
+    - name: Remove packer output directory if re-build is needed
+      ansible.builtin.file:
+        path: "{{ basevm_create_packer_root_dir }}/output"
+        state: absent
+    - name: Initialize packer
+      ansible.builtin.command:
+        cmd: packer init debian.pkr.hcl
+        chdir: "{{ basevm_create_packer_root_dir }}"
+      changed_when: true
+    - name: Build base image
+      ansible.builtin.command:
+        cmd: packer build debian.pkr.hcl
+        chdir: "{{ basevm_create_packer_root_dir }}"
+      changed_when: true
+      register: basevm_create_build_image
+
+- name: Acknowledge whether image was built
+  ansible.builtin.set_fact:
+    basevm_create_image_was_built: "{{ basevm_create_build_image is changed }}"
+
+- name: Create hardlink of output image to libvirt pool
+  ansible.builtin.file:
+    src: "{{ basevm_create_packer_image_full_path }}"
+    path: "{{ basevm_create_libvirt_image_full_path }}"
+    owner: "{{ ansible_user }}"
+    group: 'libvirt-qemu'
+    mode: '0664'
+    state: 'hard'
+    force: true
+
+- name: Remove packer junk
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - '/root/.cache/packer'
+    - '/root/.config/packer'
+    - "{{ basevm_create_packer_root_dir }}/output/efivars.fd"
+...

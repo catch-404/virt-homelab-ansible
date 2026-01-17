@@ -1,0 +1,145 @@
+packer {
+  required_plugins {
+    qemu = {
+      version = "~> 1.0"
+      source  = "github.com/hashicorp/qemu"
+    }
+  }
+}
+
+variable "iso_url" {
+  type    = string
+  default = "{{ basevm_create_debian_iso_url }}"
+  description = "URL to Debian ISO"
+}
+
+variable "checksum_url" {
+  type    = string
+  default = "{{ basevm_create_debian_iso_checksum }}"
+  description = "URL to Debian ISO checksum"
+}
+
+variable "ssh_authorized_keys" {
+  type    = string
+  default = "files/authorized_keys"
+  description = "Path to SSH public key to install"
+}
+
+variable "interfaces_file" {
+  type    = string
+  default = "files/interfaces"
+  description = "Path to network interfaces file"
+}
+
+variable "systemd_unit_file" {
+  type    = string
+  default = "files/regenerate-ssh-keys.service"
+  description = "Path to systemd unit file"
+}
+
+variable "sudo_user" {
+  type    = string
+  default = "{{ basevm_create_sudo_user }}"
+  description = "Username for new sudo user"
+}
+
+source "qemu" "debian" {
+  iso_url      = var.iso_url
+  iso_checksum = var.checksum_url
+
+  accelerator    = "kvm"
+  cpus           = 2
+  memory         = 2048
+  disk_size      = "{{ basevm_create_debian_disk_size }}"
+  disk_interface = "virtio"
+  disk_compression = true
+  format         = "qcow2"
+  headless       = true
+  
+  efi_boot          = true
+  efi_firmware_code = "/usr/share/OVMF/OVMF_CODE_4M.fd"
+  efi_firmware_vars = "/usr/share/OVMF/OVMF_VARS_4M.fd"
+
+  net_device = "virtio-net"
+  
+  http_directory = "http"
+  
+  boot_command = [
+    "<wait10>",
+    "e<wait>",
+    "<down><down><down><end>",
+    " auto=true",
+    " priority=critical",
+    " preseed/url=http://{% raw %}{{ .HTTPIP }}:{{ .HTTPPort }}{% endraw %}/preseed.cfg",
+    "<f10>"
+  ]
+  
+  boot_wait = "5s"
+  
+  ssh_username     = "root"
+  ssh_password     = "{{ basevm_create_debian_root_password }}"
+  ssh_timeout      = "10m"
+  
+  shutdown_command = "shutdown -P now"
+  
+  output_directory = "output"
+  vm_name          = "{{ basevm_create_image_file_name }}"
+}
+
+build {
+  sources = ["source.qemu.debian"]
+  
+  # Install packages
+  provisioner "shell" {
+    inline = [
+      "apt-get update",
+      "apt-get install -y qemu-guest-agent sudo",
+      "apt-get clean",
+      "rm -rf /var/lib/apt/lists/*"
+    ]
+  }
+  
+  # Create {{ basevm_create_sudo_user }} user
+  provisioner "shell" {
+    inline = [
+      "useradd -m -s /bin/bash -G sudo {{ basevm_create_sudo_user }}",
+      "mkdir -p /home/{{ basevm_create_sudo_user }}/.ssh",
+      "chmod 700 /home/{{ basevm_create_sudo_user }}/.ssh",
+      "echo '%sudo ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/nopasswd",
+      "chmod 440 /etc/sudoers.d/nopasswd"
+    ]
+  }
+  
+  # Send public SSH key for {{ basevm_create_sudo_user }} user
+  provisioner "file" {
+    source      = var.ssh_authorized_keys
+    destination = "/home/{{ basevm_create_sudo_user }}/.ssh/authorized_keys"
+  }
+  
+  # Send interfaces file
+  provisioner "file" {
+    source      = var.interfaces_file
+    destination = "/etc/network/interfaces"
+  }
+  
+  # Send regenerate-ssh-keys.service file
+  provisioner "file" {
+    source      = var.systemd_unit_file
+    destination = "/etc/systemd/system/"
+  }
+  
+  # Final configuration and cleanup
+  provisioner "shell" {
+    inline = [
+      "chown -R {{ basevm_create_sudo_user }}:{{ basevm_create_sudo_user }} /home/{{ basevm_create_sudo_user }}/.ssh",
+      "chmod 600 /home/{{ basevm_create_sudo_user }}/.ssh/authorized_keys",
+      "echo 'uninitialized' > /etc/machine-id",
+      "rm -f /var/lib/dbus/machine-id",
+      "ln -s /etc/machine-id /var/lib/dbus/machine-id",
+      "rm -f /etc/ssh/ssh_host_*",
+      "systemctl enable regenerate-ssh-keys.service",
+      "usermod -L root",
+      "> ~/.bash_history"
+    ]
+  }
+}

@@ -1,0 +1,5 @@
+---
+basevm_create_debian_version: "13.3.0"
+basevm_create_debian_iso_url: "https://cdimage.debian.org/debian-cd/{{ basevm_create_debian_version }}/amd64/iso-cd/debian-{{ basevm_create_debian_version }}-amd64-netinst.iso"
+basevm_create_debian_iso_checksum: "file:https://cdimage.debian.org/debian-cd/{{ basevm_create_debian_version }}/amd64/iso-cd/SHA256SUMS"
+...

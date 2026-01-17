@@ -1,0 +1,28 @@
+hypervisor:
+  hosts:
+    rocinante:
+      ansible_host: rocinante.home
+      ansible_user: holden
+      ansible_port: 22
+vms:
+  hosts:
+    medina:
+      ansible_host: medina.home
+      ansible_user: holden
+      ansible_port: 22
+    razorback:
+      ansible_host: razorback.home
+      ansible_user: holden
+      ansible_port: 22
+    canterbury:
+      ansible_host: canterbury.home
+      ansible_user: holden
+      ansible_port: 22
+    tycho-01:
+      ansible_host: tycho-01.home
+      ansible_user: holden
+      ansible_port: 22
+    tycho-02:
+      ansible_host: tycho-02.home
+      ansible_user: holden
+      ansible_port: 22

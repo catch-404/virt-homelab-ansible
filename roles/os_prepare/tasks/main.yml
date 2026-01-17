@@ -1,0 +1,179 @@
+---
+- name: Convert APT sources to HTTPS in sources.list
+  ansible.builtin.replace:
+    path: /etc/apt/sources.list
+    regexp: '^(deb(?:-src)?\s+)http://'
+    replace: '\1https://'
+  register: os_prepare_apt_sources_https
+
+- name: Check if this boot is first boot
+  ansible.builtin.command: systemd-analyze condition ConditionFirstBoot=yes
+  changed_when: false
+  failed_when: false
+  register: os_prepare_first_boot
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+  when: os_prepare_first_boot.rc == 0 or
+        os_prepare_apt_sources_https is changed
+
+- name: Install base system packages
+  ansible.builtin.apt:
+    name:
+      - bash-completion
+      - python3-argcomplete
+      - nano
+      - vim
+      - rsync
+      - tree
+      - btop
+      - ncdu
+      - tcpdump
+      - ethtool
+    force_apt_get: true
+    state: present
+  register: os_prepare_package_install
+  retries: 3
+  delay: 10
+  until: os_prepare_package_install is success
+
+- name: Disable IPv6
+  ansible.builtin.copy:
+    src: '1-ipv6.conf'
+    dest: '/etc/sysctl.d/1-ipv6.conf'
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+  notify:
+    - Apply sysctl params
+    - Restart networking
+
+- name: Configure IPAM
+  notify: Restart networking
+  block:
+    - name: Copy common interfaces file
+      ansible.builtin.copy:
+        src: 'interfaces'
+        dest: '/etc/network/interfaces'
+        owner: root
+        group: root
+        mode: '0644'
+        backup: true
+    - name: Template interface-specific config files for local network
+      ansible.builtin.template:
+        src: "{{ os_prepare_ipam_network_template }}"
+        dest: "/etc/network/interfaces.d/local-network"
+        owner: root
+        group: root
+        mode: '0644'
+        backup: true
+        validate: '/usr/sbin/ifup --no-act %s'
+
+- name: Set DNS to network-wide DNS server
+  ansible.builtin.template:
+    src: 'resolv.conf.j2'
+    dest: "/etc/resolv.conf"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+
+- name: Change hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Configure /etc/hosts
+  block:
+    - name: Remove 127.0.1.1 in /etc/hosts
+      ansible.builtin.lineinfile:
+        path: '/etc/hosts'
+        regexp: '^127.0.1.1'
+        state: absent
+
+    - name: Add or replace hostname line in /etc/hosts
+      ansible.builtin.lineinfile:
+        path: '/etc/hosts'
+        regexp: "{{ inventory_hostname }}$"
+        insertafter: '127.0.0.1.*localhost'
+        line: "{{ ansible_facts['default_ipv4']['address'] }}\t{{ inventory_hostname }}"
+        state: present
+        backup: true
+
+# add something to enable wol, aka install ethtool and do the service
+
+- name: Secure SSH
+  notify: Restart SSH
+  block:
+    - name: Secure sshd_config
+      ansible.builtin.lineinfile:
+        path: '/etc/ssh/sshd_config'
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+        owner: root
+        group: root
+        mode: '0644'
+        backup: true
+        validate: '/usr/sbin/sshd -t -f %s'
+      loop:
+        - regexp: '^#?PermitRootLogin'
+          line: 'PermitRootLogin no'
+        - regexp: '^#?PasswordAuthentication'
+          line: 'PasswordAuthentication no'
+        - regexp: '^#?AllowUsers'
+          line: "AllowUsers {{ ansible_user }}"
+    - name: Secure ssh_config
+      ansible.builtin.lineinfile:
+        path: '/etc/ssh/ssh_config.d/99-hash_known_hosts.conf'
+        regexp: '^#?HashKnownHosts'
+        line: "HashKnownHosts yes"
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+
+- name: Customize bash PS1 prompt
+  ansible.builtin.blockinfile:
+    path: "/home/{{ ansible_user }}/.bashrc"
+    marker: "# {mark} ANSIBLE MANAGED PS1"
+    block: |
+      PS1='{{ os_prepare_ps1 }}'
+
+- name: Add aliases
+  ansible.builtin.blockinfile:
+    path: "/home/{{ ansible_user }}/.bashrc"
+    marker: "# {mark} ANSIBLE MANAGED ALIASES"
+    block: |
+      alias ll='ls -lF --color=auto'
+      alias l='ls -F --color=auto'
+      alias la='ls -lAF --color=auto'
+      alias bdiff='diff -y --suppress-common-lines'
+      alias ff=fastfetch
+      alias failed='systemctl --failed && echo && systemctl --user --failed'
+
+- name: Configure GRUB
+  ansible.builtin.lineinfile:
+    path: '/etc/default/grub'
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+  loop:
+    - regexp: '^#?GRUB_TIMEOUT'
+      line: 'GRUB_TIMEOUT=1'
+    - regexp: '^#?GRUB_DISABLE_OS_PROBER'
+      line: 'GRUB_DISABLE_OS_PROBER=true'
+  notify: Update GRUB
+
+- name: Add user to systemd-journal group
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: "systemd-journal"
+    append: true
+    state: present
+...

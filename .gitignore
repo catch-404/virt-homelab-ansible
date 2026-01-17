@@ -1,0 +1,6 @@
+authorized_keys
+debug.yml
+settings.json
+secrets*
+.vscode
+.ansible

@@ -1,0 +1,23 @@
+---
+- name: Change GRUB command line arguments
+  ansible.builtin.lineinfile:
+    path: '/etc/default/grub'
+    regexp: '^GRUB_CMDLINE_LINUX_DEFAULT'
+    line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet intel_iommu=on vfio-pci.ids={{ igpu_passthrough_id }}"'
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Update GRUB
+
+- name: Add necessary modules to initramfs
+  ansible.builtin.blockinfile:
+    path: "/etc/modules"
+    marker: "# {mark} ANSIBLE MANAGED MODULES"
+    block: |
+      vfio
+      vfio_iommu_type1
+      vfio_pci
+  notify:
+    - Update initramfs
+    - Reboot
+...

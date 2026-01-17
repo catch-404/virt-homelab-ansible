@@ -1,0 +1,84 @@
+#_preseed_V1
+
+### Localization
+d-i debian-installer/language string en
+d-i debian-installer/country string BE
+d-i debian-installer/locale string en_US.UTF-8
+
+# Keyboard selection.
+d-i keyboard-configuration/xkb-keymap select gb
+
+### Network configuration
+d-i netcfg/choose_interface select auto
+d-i netcfg/link_wait_timeout string 10
+d-i netcfg/dhcp_timeout string 60
+d-i netcfg/get_hostname string 0-debian
+d-i netcfg/get_domain string
+d-i netcfg/hostname string 0-debian
+
+### Mirror settings
+d-i mirror/country string manual
+d-i mirror/http/hostname string deb.debian.org
+d-i mirror/http/directory string /debian
+d-i mirror/http/proxy string
+
+### Account setup
+d-i passwd/make-user boolean false
+d-i passwd/root-password password {{ basevm_create_debian_root_password  }}
+d-i passwd/root-password-again password {{ basevm_create_debian_root_password  }}
+
+### Clock and time zone setup
+d-i clock-setup/utc boolean true
+d-i time/zone string Europe/Brussels
+d-i clock-setup/ntp boolean true
+
+### Partitioning
+d-i partman-auto/method string regular
+d-i partman-lvm/device_remove_lvm boolean true
+d-i partman-md/device_remove_md boolean true
+d-i partman-partitioning/choose_label select gpt
+d-i partman-partitioning/default_label string gpt
+
+d-i partman-auto/expert_recipe string                         \
+      boot-root ::                                            \
+              538 538 1075 free                               \
+                      $iflabel{ gpt }                         \
+                      $reusemethod{ }                         \
+                      method{ efi }                           \
+                      format{ }                               \
+              .                                               \
+              1000 10000 1000000000 ext4                      \
+                      method{ format } format{ }              \
+                      use_filesystem{ } filesystem{ ext4 }    \
+                      mountpoint{ / }                         \
+              .
+
+d-i partman-md/confirm boolean true
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+d-i partman-basicfilesystems/no_swap boolean false
+
+### Apt setup
+d-i apt-setup/cdrom/set-first boolean false
+d-i apt-setup/non-free boolean true
+d-i apt-setup/contrib boolean true
+d-i apt-setup/disable-cdrom-entries boolean true
+
+### Package selection
+tasksel tasksel/first multiselect standard, ssh-server
+d-i pkgsel/upgrade select full-upgrade
+popularity-contest popularity-contest/participate boolean false
+
+### Boot loader installation
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/with_other_os boolean true
+d-i grub-installer/bootdev  string default
+
+### Finishing up the installation
+d-i finish-install/reboot_in_progress note
+
+# Enable root SSH login with password
+d-i preseed/late_command string \
+    in-target sed -i 's/^#*PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config

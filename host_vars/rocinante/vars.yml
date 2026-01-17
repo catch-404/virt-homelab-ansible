@@ -1,0 +1,85 @@
+---
+vm_mac_prefix: '52:54:00:ff:ff'
+physical_interface_1: 'enp2s0'
+physical_interface_2: 'enp3s0'
+bridge_interface_1: 'br0'
+bridge_interface_2: 'br1'
+ipv4_address_2: '10.255.255.242'
+libvirt_disk_pool_path: '/var/lib/libvirt/disks'
+base_disk: 'base.qcow2'
+# VM names are immutable identifiers. Renaming a VM in this list
+# will create a new VM - you must manually clean up the old one
+vm_definitions:
+  - name: 'medina'
+    user: 'drummer'
+    template: 'vm.xml.j2'
+    mem: 1
+    cpus: 1
+    mac: "{{ vm_mac_prefix }}:01"
+    extra_disks:
+      - suffix: 'appdata'
+        size: '16G'
+        target: 'vdb'
+  - name: 'razorback'
+    user: 'bobbie'
+    template: 'vm_igpu.xml.j2'
+    mem: 4
+    cpus: 2
+    mac: "{{ vm_mac_prefix }}:02"
+    extra_disks:
+      - suffix: 'appdata'
+        size: '64G'
+        target: 'vdb'
+  - name: 'canterbury'
+    user: 'amos'
+    template: 'vm.xml.j2'
+    mem: 20
+    cpus: 8
+    mac: "{{ vm_mac_prefix }}:03"
+    extra_disks:
+      - suffix: 'appdata'
+        size: '64G'
+        target: 'vdb'
+  - name: 'tycho-01'
+    user: 'ashford'
+    template: 'vm.xml.j2'
+    mem: 2
+    cpus: 2
+    mac: "{{ vm_mac_prefix }}:04"
+    autostart: false
+  - name: 'tycho-02'
+    user: 'ashford'
+    template: 'vm.xml.j2'
+    mem: 2
+    cpus: 2
+    mac: "{{ vm_mac_prefix }}:05"
+    autostart: false
+
+os_prepare_ps1: '\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;36m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+os_prepare_ipam_network_template: 'local-network-hypervisor.j2'
+os_prepare_physical_interface: "{{ physical_interface_1 }}"
+os_prepare_bridge_interface: "{{ bridge_interface_1 }}"
+os_prepare_ipv4_address: "{{ ipv4_address_1 }}"
+
+ip_direct_setup_ipam_network_template: 'direct-connection-hypervisor.j2'
+ip_direct_setup_physical_interface: "{{ physical_interface_2 }}"
+ip_direct_setup_bridge_interface: "{{ bridge_interface_2 }}"
+ip_direct_setup_ipv4_address: "{{ ipv4_address_2 }}"
+
+igpu_passthrough_id: '8086:46a6'
+
+basevm_create_sudo_user: "holden"
+basevm_create_debian_root_password: "{{ temp_root_pwd }}"
+basevm_create_debian_disk_size: '64G'
+basevm_create_image_file_name: "{{ base_disk }}"
+basevm_create_packer_root_dir: '/opt/packer'
+basevm_create_libvirt_output_path: "{{ libvirt_disk_pool_path }}"
+basevm_create_libvirt_image_full_path: "{{ basevm_create_libvirt_output_path }}/{{ basevm_create_image_file_name }}"
+basevm_create_packer_image_full_path: "{{ basevm_create_packer_root_dir }}/output/{{ basevm_create_image_file_name }}"
+
+vm_create_definitions_dir: "/home/{{ ansible_user }}/definitions"
+vm_create_libvirt_disk_pool: "disks"
+vm_create_libvirt_disk_pool_path: "{{ libvirt_disk_pool_path }}"
+vm_create_base_disk: "{{ base_disk }}"
+vm_create_definitions: "{{ vm_definitions }}"
+...

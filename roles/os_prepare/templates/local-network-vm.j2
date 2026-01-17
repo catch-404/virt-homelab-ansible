@@ -1,0 +1,7 @@
+# The primary network interface
+auto {{ os_prepare_physical_interface }}
+iface {{ os_prepare_physical_interface }} inet static
+    address {{ os_prepare_ipv4_address }}
+    broadcast {{ os_prepare_ipv4_broadcast }}
+    netmask {{ os_prepare_ipv4_netmask }}
+    gateway {{ os_prepare_ipv4_gateway }}

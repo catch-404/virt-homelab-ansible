@@ -1,0 +1,22 @@
+---
+- name: "Check if disk exists [{{ vm_name }}]"
+  ansible.builtin.stat:
+    path: "{{ extra_disk_path }}"
+  register: vm_create_extra_disk_existence
+
+- name: "Create disk [{{ vm_name }}]"
+  ansible.builtin.command: virsh vol-create-as {{ vm_create_libvirt_disk_pool }} {{ extra_disk_name }} {{ extra_disk_size }} --format qcow2
+  changed_when: true
+  when: not vm_create_extra_disk_existence.stat.exists
+
+- name: "Check if disk is attached [{{ vm_name }}]"
+  ansible.builtin.shell: set -o pipefail && virsh dumpxml {{ vm_name }} | grep "{{ extra_disk_path }}"
+  changed_when: false
+  failed_when: vm_create_extradisk_attached_check.stderr | length > 0 # hacky way of failing if anything but grep fails
+  register: vm_create_extradisk_attached_check
+
+- name: "Attach disk [{{ vm_name }}]"
+  ansible.builtin.command: virsh attach-disk {{ vm_name }} {{ extra_disk_path }} {{ extra_disk_target }} --subdriver qcow2 --current
+  changed_when: true
+  when: vm_create_extradisk_attached_check.rc != 0
+...

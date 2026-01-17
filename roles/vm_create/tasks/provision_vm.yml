@@ -1,0 +1,101 @@
+---
+- name: "Template XML VM definition [{{ vm_name }}]"
+  ansible.builtin.template:
+    src: "{{ vm_template }}"
+    dest: "{{ vm_xml }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+  register: vm_create_templating
+
+- name: "Check for VM existence [{{ vm_name }}]"
+  ansible.builtin.stat:
+    path: "/etc/libvirt/qemu/{{ vm_name }}.xml"
+  register: vm_create_existence_check
+
+- name: "Acknowledge whether VM should be created [{{ vm_name }}]"
+  ansible.builtin.set_fact:
+    vm_create_needs_creation: "{{ vm_create_templating is changed or not vm_create_existence_check.stat.exists }}"
+
+- name: "Ask for confirmation if mismatch between base image and existing VM [{{ vm_name }}]"
+  ansible.builtin.pause:
+    prompt: |-
+      WARNING: Base image mismatch!
+      A new base image was built, but {{ vm_name }} already exists and was created from a previous base image.
+      Type 'YES' to recreate with the new image, or anything else to keep existing VM
+  when: (basevm_create_image_was_built and vm_create_existence_check.stat.exists) and not vm_create_needs_creation
+  register: vm_create_pause
+
+- name: "Re-acknowledge whether VM should be created [{{ vm_name }}]"
+  ansible.builtin.set_fact:
+    vm_create_needs_creation: "{{ vm_create_needs_creation or (vm_create_pause is not skipped and vm_create_pause.user_input == 'YES') }}"
+
+- name: "Acknowledge whether VM should be recreated [{{ vm_name }}]"
+  ansible.builtin.set_fact:
+    vm_create_needs_recreation: "{{ vm_create_needs_creation and vm_create_existence_check.stat.exists }}"
+
+- name: "Reprepare VM [{{ vm_name }}]"
+  when: vm_create_needs_recreation
+  block:
+    - name: "Stop VM [{{ vm_name }}]"
+      ansible.builtin.command: virsh destroy {{ vm_name }}
+      register: vm_create_stop_vm
+      failed_when: vm_create_stop_vm.rc != 0 and 'domain is not running' not in vm_create_stop_vm.stderr
+      changed_when: true
+    - name: "Undefine VM [{{ vm_name }}]"
+      ansible.builtin.command: virsh undefine {{ vm_name }} --nvram
+      changed_when: true
+    - name: "Delete VM disks [{{ vm_name }}]"
+      ansible.builtin.command: virsh vol-delete {{ vm_disk }} {{ vm_create_libvirt_disk_pool }}
+      changed_when: true
+
+- name: "Prepare VM OS disk [{{ vm_name }}]"
+  ansible.builtin.command: virsh vol-clone {{ vm_create_base_disk }} {{ vm_disk }} {{ vm_create_libvirt_disk_pool }}
+  changed_when: true
+  when: vm_create_needs_creation
+
+- name: "Define VM [{{ vm_name }}]"
+  ansible.builtin.command: virsh define {{ vm_xml }}
+  changed_when: true
+  when: vm_create_needs_creation
+  register: vm_create_is_defined
+
+- name: "Handle additional disk(s) [{{ vm_name }}]"
+  ansible.builtin.include_tasks: 'handle_disks.yml'
+  vars:
+    extra_disk_name: "{{ vm_name }}_{{ disk_item.suffix }}.qcow2"
+    extra_disk_path: "{{ vm_create_libvirt_disk_pool_path }}/{{ extra_disk_name }}"
+    extra_disk_size: "{{ disk_item.size }}"
+    extra_disk_target: "{{ disk_item.target }}"
+  when: (vm_extra_disks is defined) and (vm_extra_disks | length > 0)
+  loop: "{{ vm_extra_disks }}"
+  loop_control:
+    loop_var: disk_item
+
+- name: "Check if VM is running [{{ vm_name }}]"
+  ansible.builtin.shell: set -o pipefail && virsh list --all --state-running --name | grep -x "{{ vm_name }}"
+  changed_when: false
+  failed_when: vm_create_running_check.stderr | length > 0 # hacky way of failing if anything but grep fails
+  register: vm_create_running_check
+
+- name: "Start VM [{{ vm_name }}]"
+  ansible.builtin.command: virsh start {{ vm_name }}
+  changed_when: true
+  when: vm_create_running_check.rc != 0
+
+- name: "Check if VM autostart is enabled [{{ vm_name }}]"
+  ansible.builtin.shell: set -o pipefail && virsh list --all --autostart --name | grep -x "{{ vm_name }}"
+  changed_when: false
+  failed_when: vm_create_autostart_check.stderr | length > 0 # hacky way of failing if anything but grep fails
+  register: vm_create_autostart_check
+
+- name: "Enable autostart for VM [{{ vm_name }}]"
+  ansible.builtin.command: virsh autostart {{ vm_name }}
+  changed_when: true
+  when: vm_create_autostart_check.rc != 0 and vm_autostart
+
+- name: "Disable autostart for VM [{{ vm_name }}]"
+  ansible.builtin.command: virsh autostart {{ vm_name }} --disable
+  changed_when: true
+  when: vm_create_autostart_check.rc == 0 and not vm_autostart
+...
