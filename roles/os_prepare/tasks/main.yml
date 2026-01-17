@@ -31,6 +31,7 @@
       - ncdu
       - tcpdump
       - ethtool
+      - fastfetch
     force_apt_get: true
     state: present
   register: os_prepare_package_install
@@ -71,15 +72,6 @@
         backup: true
         validate: '/usr/sbin/ifup --no-act %s'
 
-- name: Set DNS to network-wide DNS server
-  ansible.builtin.template:
-    src: 'resolv.conf.j2'
-    dest: "/etc/resolv.conf"
-    owner: root
-    group: root
-    mode: '0644'
-    backup: true
-
 - name: Change hostname
   ansible.builtin.hostname:
     name: "{{ inventory_hostname }}"
@@ -102,6 +94,18 @@
         backup: true
 
 # add something to enable wol, aka install ethtool and do the service
+
+- name: Flush handlers (need networking reset before DNS change)
+  ansible.builtin.meta: flush_handlers
+
+- name: Set DNS to network-wide DNS server
+  ansible.builtin.template:
+    src: 'resolv.conf.j2'
+    dest: "/etc/resolv.conf"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
 
 - name: Secure SSH
   notify: Restart SSH
