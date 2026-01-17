@@ -10,15 +10,15 @@
 - name: Provision VMs
   ansible.builtin.include_tasks: 'provision_vm.yml'
   vars:
-    vm_name: "{{ item.name }}"
-    vm_template: "{{ item.template }}"
+    vm_name: "{{ item.key }}"
+    vm_template: "{{ item.value['template'] }}"
     vm_xml: "{{ vm_create_definitions_dir }}/{{ vm_name }}.xml"
-    vm_mem: "{{ item.mem }}"
-    vm_cpus: "{{ item.cpus }}"
-    vm_disk: "{{ item.name }}.qcow2"
+    vm_mem: "{{ item.value['mem'] }}"
+    vm_cpus: "{{ item.value['cpus'] }}"
+    vm_disk: "{{ vm_name }}.qcow2"
     vm_disk_path: "{{ vm_create_libvirt_disk_pool_path }}/{{ vm_disk }}"
-    vm_mac: "{{ item.mac }}"
-    vm_extra_disks: "{{ item.extra_disks }}"
-    vm_autostart: "{{ item.autostart | default(true) }}"
-  loop: "{{ vm_create_definitions }}"
+    vm_mac: "{{ item.value['mac'] }}"
+    vm_extra_disks: "{{ item.value['extra_disks'] }}"
+    vm_autostart: "{{ item.value['autostart'] | default(true) }}"
+  loop: "{{ vm_create_definitions | dict2items }}"
 ...

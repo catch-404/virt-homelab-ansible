@@ -1,58 +1,10 @@
 ---
-vm_mac_prefix: '52:54:00:ff:ff'
 physical_interface_1: 'enp2s0'
 physical_interface_2: 'enp3s0'
 bridge_interface_1: 'br0'
 bridge_interface_2: 'br1'
 libvirt_disk_pool_path: '/var/lib/libvirt/disks'
 base_disk: 'base.qcow2'
-# VM names are immutable identifiers. Renaming a VM in this list
-# will create a new VM - you must manually clean up the old one
-vm_definitions:
-  - name: 'medina'
-    user: 'drummer'
-    template: 'vm.xml.j2'
-    mem: 1
-    cpus: 1
-    mac: "{{ vm_mac_prefix }}:01"
-    extra_disks:
-      - suffix: 'appdata'
-        size: '16G'
-        target: 'vdb'
-  - name: 'razorback'
-    user: 'bobbie'
-    template: 'vm_igpu.xml.j2'
-    mem: 4
-    cpus: 2
-    mac: "{{ vm_mac_prefix }}:02"
-    extra_disks:
-      - suffix: 'appdata'
-        size: '64G'
-        target: 'vdb'
-  - name: 'canterbury'
-    user: 'amos'
-    template: 'vm.xml.j2'
-    mem: 20
-    cpus: 8
-    mac: "{{ vm_mac_prefix }}:03"
-    extra_disks:
-      - suffix: 'appdata'
-        size: '64G'
-        target: 'vdb'
-  - name: 'tycho-01'
-    user: 'ashford'
-    template: 'vm.xml.j2'
-    mem: 2
-    cpus: 2
-    mac: "{{ vm_mac_prefix }}:04"
-    autostart: false
-  - name: 'tycho-02'
-    user: 'ashford'
-    template: 'vm.xml.j2'
-    mem: 2
-    cpus: 2
-    mac: "{{ vm_mac_prefix }}:05"
-    autostart: false
 
 os_prepare_ps1: '\[\e[36;1m\]\u@\h\[\e[0m\]:\[\e[34;1m\]\w\[\e[0m\]\$ '
 os_prepare_ipam_network_template: 'local-network-hypervisor.j2'
