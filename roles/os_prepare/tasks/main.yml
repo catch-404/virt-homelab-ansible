@@ -6,17 +6,19 @@
     replace: '\1https://'
   register: os_prepare_apt_sources_https
 
-- name: Check if this boot is first boot
-  ansible.builtin.command: systemd-analyze condition ConditionFirstBoot=yes
-  changed_when: false
-  failed_when: false
-  register: os_prepare_first_boot
+- name: Register APT cache contents
+  ansible.builtin.find:
+    paths: '/var/lib/apt/lists'
+    file_type: 'any'
+    hidden: true
+  register: os_prepare_apt_cache_contents
 
 - name: Update apt cache
   ansible.builtin.apt:
     update_cache: true
-  when: os_prepare_first_boot.rc == 0 or
-        os_prepare_apt_sources_https is changed
+  when: |
+    os_prepare_apt_sources_https is changed or
+    os_prepare_apt_cache_contents.matched == 0
 
 - name: Install base system packages
   ansible.builtin.apt:
@@ -33,6 +35,8 @@
       - ethtool
       - fastfetch
     force_apt_get: true
+    update_cache: true
+    cache_valid_time: 3600
     state: present
   register: os_prepare_package_install
   retries: 3

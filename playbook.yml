@@ -37,13 +37,13 @@
   hosts: vms
   become: true
   tasks:
-    - name: Partition and format extra disk
-      ansible.builtin.include_role:
-        name: init_disk
-      when: init_disk_target is defined
     - name: Prepare basic OS configuration
       ansible.builtin.include_role:
         name: os_prepare
+    - name: Partition and format extra disk # might want to install docker first to chown disk right directly
+      ansible.builtin.include_role:
+        name: init_disk
+      when: init_disk_target is defined
     # - name: Placeholder VM task # create swapfile there. or maybe above?
     #   ansible.builtin.debug:
     #     var: ansible_facts
@@ -55,5 +55,5 @@
     - name: Configure IPAM for direct-to-NAS connection
       ansible.builtin.include_role:
         name: ip_direct_setup
-#     # - ssh, from everyone to nas & from everyone to everyone else
+    # - ssh, from everyone to nas & from everyone to everyone else
 ...
