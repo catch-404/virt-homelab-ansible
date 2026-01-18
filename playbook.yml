@@ -32,15 +32,18 @@
     - name: Wait for VM connection
       ansible.builtin.wait_for_connection:
         timeout: 60
-        delay: 5
 
 - name: VM tasks
   hosts: vms
   become: true
   tasks:
+    - name: Partition and format extra disk
+      ansible.builtin.include_role:
+        name: init_disk
+      when: init_disk_target is defined
     - name: Prepare basic OS configuration
       ansible.builtin.include_role:
-        name: os_prepare # will need a task to format additional disks for VMs that have them. Maybe do a role for that
+        name: os_prepare
     # - name: Placeholder VM task # create swapfile there. or maybe above?
     #   ansible.builtin.debug:
     #     var: ansible_facts

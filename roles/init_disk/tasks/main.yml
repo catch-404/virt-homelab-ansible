@@ -1,0 +1,42 @@
+---
+- name: Install parted
+  ansible.builtin.apt:
+    name: parted
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create partition
+  community.general.parted:
+    device: "/dev/{{ init_disk_target }}"
+    label: 'gpt'
+    number: "{{ init_disk_part_number }}"
+    fs_type: "{{ init_disk_fstype }}"
+    state: present
+
+- name: Format partition
+  community.general.filesystem:
+    fstype: "{{ init_disk_fstype }}"
+    dev: "/dev/{{ init_disk_target + init_disk_part_number }}"
+
+- name: Create mount point
+  ansible.builtin.file:
+    path: "{{ init_disk_mount_point }}"
+    state: directory
+    owner: 'root'
+    group: 'root'
+    mode: '0755'
+
+- name: Update ansible_facts
+  ansible.builtin.setup:
+    gather_subset: ['devices']
+
+- name: Mount device
+  ansible.posix.mount:
+    path: "{{ init_disk_mount_point }}"
+    src: UUID="{{ ansible_facts['device_links']['uuids'][init_disk_target + '1'][0] }}"
+    fstype: "{{ init_disk_fstype }}"
+    passno: 2
+    state: mounted
+    boot: true
+...

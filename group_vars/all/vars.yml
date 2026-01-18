@@ -1,6 +1,6 @@
 ---
 vm_mac_prefix: '52:54:00:ff:ff'
-# VM names are immutable identifiers. Renaming a VM in this list
+# VM names are immutable identifiers. Renaming a VM in this dict
 # will create a new VM - you must manually clean up the old one
 vm_definitions:
   medina:
