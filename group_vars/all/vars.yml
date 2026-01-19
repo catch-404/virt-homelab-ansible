@@ -1,7 +1,5 @@
 ---
 vm_mac_prefix: '52:54:00:ff:ff'
-# VM names are immutable identifiers. Renaming a VM in this dict
-# will create a new VM - you must manually clean up the old one
 vm_definitions:
   medina:
     user: 'drummer'
@@ -9,6 +7,7 @@ vm_definitions:
     mem: 1
     cpus: 1
     mac: "{{ vm_mac_prefix }}:01"
+    swap: 2
     extra_disks:
       - suffix: 'appdata'
         size: '16G'
@@ -19,6 +18,7 @@ vm_definitions:
     mem: 4
     cpus: 2
     mac: "{{ vm_mac_prefix }}:02"
+    swap: 4
     extra_disks:
       - suffix: 'appdata'
         size: '64G'
@@ -29,6 +29,7 @@ vm_definitions:
     mem: 20
     cpus: 8
     mac: "{{ vm_mac_prefix }}:03"
+    swap: 4
     extra_disks:
       - suffix: 'appdata'
         size: '64G'

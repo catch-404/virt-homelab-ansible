@@ -55,6 +55,16 @@
     - Apply sysctl params
     - Restart networking
 
+- name: Set low swappiness
+  ansible.builtin.copy:
+    src: '50-swap.conf'
+    dest: '/etc/sysctl.d/50-swap.conf'
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+  notify: Apply sysctl params
+
 - name: Configure IPAM
   notify: Restart networking
   block:

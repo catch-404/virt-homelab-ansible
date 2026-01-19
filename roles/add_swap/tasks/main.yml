@@ -1,0 +1,41 @@
+---
+- name: Check whether /swapfile exists
+  ansible.builtin.stat:
+    path: '/swapfile'
+  register: add_swap_swapfile
+
+- name: Allocate the swap file
+  ansible.builtin.command: fallocate -l {{ add_swap_size }}GiB /swapfile
+  changed_when: true
+  when: not add_swap_swapfile.stat.exists
+
+- name: Check whether /swapfile is used as swap
+  ansible.builtin.command: grep '/swapfile' /proc/swaps
+  changed_when: false
+  failed_when: add_swap_swapfile_active.rc > 1
+  register: add_swap_swapfile_active
+
+- name: Change permission of the swap file
+  ansible.builtin.file:
+    path: '/swapfile'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+
+- name: Create a swap area on the swap file
+  ansible.builtin.command: mkswap /swapfile
+  changed_when: true
+  when: add_swap_swapfile_active.rc != 0
+
+- name: Activate the swap file as a swap memory
+  ansible.builtin.command: swapon /swapfile
+  changed_when: true
+  when: add_swap_swapfile_active.rc != 0
+
+- name: Add swap file to fstab
+  ansible.builtin.lineinfile:
+    path: '/etc/fstab'
+    regexp: '^/swapfile\s+'
+    line: '/swapfile swap swap sw 0 0'
+    state: present
+...

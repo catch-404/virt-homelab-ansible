@@ -15,4 +15,6 @@ init_disk_target: "{{ vm_definitions[inventory_hostname]['extra_disks'][0]['targ
 init_disk_part_number: '1'
 init_disk_fstype: 'ext4'
 init_disk_mount_point: '/docker'
+
+add_swap_size: "{{ vm_definitions[inventory_hostname]['swap'] }}"
 ...
