@@ -19,4 +19,10 @@ init_disk_mount_point: '/docker'
 
 needs_swap: "{{ vm_definitions[inventory_hostname]['swap'] is defined }}"
 add_swap_size: "{{ vm_definitions[inventory_hostname]['swap'] }}"
+
+needs_nfs_mount: "{{ vm_definitions[inventory_hostname]['nfs_mounts'] is defined }}"
+nfs_mount_mountpoint: "{{ vm_definitions[inventory_hostname]['nfs_mounts'][0]['path'] }}"
+nfs_mount_server: "{{ vm_definitions[inventory_hostname]['nfs_mounts'][0]['source'] }}"
+nfs_mount_opts: "{{ vm_definitions[inventory_hostname]['nfs_mounts'][0]['opts'] }}"
+nfs_mount_automount_unit: "{{ nfs_mount_mountpoint[1:] | replace('/', '-') }}.automount"
 ...

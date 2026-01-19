@@ -1,0 +1,11 @@
+---
+- name: Start the automount unit
+  ansible.builtin.systemd_service:
+    name: "{{ nfs_mount_automount_unit }}"
+    state: started
+    daemon_reload: true
+
+- name: Trigger automount unit
+  ansible.builtin.stat:
+    path: "{{ nfs_mount_mountpoint }}"
+...

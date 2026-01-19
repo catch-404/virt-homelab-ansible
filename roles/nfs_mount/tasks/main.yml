@@ -1,0 +1,40 @@
+---
+- name: Install nfs-common
+  ansible.builtin.apt:
+    name: nfs-common
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create mount point & make it immutable # 2 tasks are needed here because chattr +i doesn't play well with recurse option
+  when: nfs_mount_mountpoint not in (ansible_facts['mounts'] | map(attribute='mount'))
+  block:
+    - name: Create mount point
+      ansible.builtin.file:
+        path: "{{ nfs_mount_mountpoint }}"
+        owner: 'root'
+        group: 'root'
+        mode: '0755'
+        state: directory
+        recurse: true
+    - name: Make mount point immutable
+      ansible.builtin.file:
+        path: "{{ nfs_mount_mountpoint }}"
+        attributes: '+i'
+        owner: 'root'
+        group: 'root'
+        mode: '0755'
+        state: directory
+
+- name: Mount NFS device
+  ansible.posix.mount:
+    path: "{{ nfs_mount_mountpoint }}"
+    src: "{{ nfs_mount_server }}"
+    opts: "{{ nfs_mount_opts }}"
+    fstype: 'nfs'
+    passno: 0
+    state: present
+  notify:
+    - Start the automount unit
+    - Trigger automount unit
+...

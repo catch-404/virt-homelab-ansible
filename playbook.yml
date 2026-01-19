@@ -33,6 +33,15 @@
       ansible.builtin.wait_for_connection:
         timeout: 60
 
+- name: Setup hosts & NAS interconnectivity
+  hosts: all
+  become: true
+  tasks:
+    - name: Configure IPAM for direct-to-NAS connection
+      ansible.builtin.include_role:
+        name: ip_direct_setup
+    # - ssh, from everyone to nas & from everyone to everyone else
+
 - name: VM tasks
   hosts: vms
   become: true
@@ -48,13 +57,8 @@
       ansible.builtin.include_role:
         name: init_disk
       when: needs_extra_disk
-
-- name: Setup hosts & NAS interconnectivity
-  hosts: all
-  become: true
-  tasks:
-    - name: Configure IPAM for direct-to-NAS connection
+    - name: Configure NFS mounts
       ansible.builtin.include_role:
-        name: ip_direct_setup
-    # - ssh, from everyone to nas & from everyone to everyone else
+        name: nfs_mount
+      when: needs_nfs_mount
 ...
