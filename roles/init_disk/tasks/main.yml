@@ -34,7 +34,7 @@
 - name: Mount device
   ansible.posix.mount:
     path: "{{ init_disk_mount_point }}"
-    src: UUID="{{ ansible_facts['device_links']['uuids'][init_disk_target + '1'][0] }}"
+    src: "UUID={{ ansible_facts['device_links']['uuids'][init_disk_target + '1'][0] }}"
     fstype: "{{ init_disk_fstype }}"
     passno: 2
     state: mounted
