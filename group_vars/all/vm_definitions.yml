@@ -1,0 +1,58 @@
+---
+vm_definitions:
+  medina:
+    user: 'drummer'
+    template: 'vm.xml.j2'
+    mem: 1
+    cpus: 1
+    mac: "{{ vm_mac_prefix }}:01"
+    swap: 2
+    extra_disks:
+      - suffix: 'appdata'
+        size: '16G'
+        target: 'vdb'
+  razorback:
+    user: 'bobbie'
+    template: 'vm_igpu.xml.j2'
+    mem: 4
+    cpus: 2
+    mac: "{{ vm_mac_prefix }}:02"
+    swap: 4
+    extra_disks:
+      - suffix: 'appdata'
+        size: '64G'
+        target: 'vdb'
+    nfs_mounts: "{{ nfs_mounts_definition }}"
+  canterbury:
+    user: 'amos'
+    template: 'vm.xml.j2'
+    mem: 20
+    cpus: 8
+    mac: "{{ vm_mac_prefix }}:03"
+    swap: 4
+    extra_disks:
+      - suffix: 'appdata'
+        size: '64G'
+        target: 'vdb'
+    nfs_mounts: "{{ nfs_mounts_definition }}"
+  tycho-01:
+    user: 'ashford'
+    template: 'vm.xml.j2'
+    mem: 2
+    cpus: 2
+    mac: "{{ vm_mac_prefix }}:04"
+    autostart: false
+  tycho-02:
+    user: 'ashford'
+    template: 'vm.xml.j2'
+    mem: 2
+    cpus: 2
+    mac: "{{ vm_mac_prefix }}:05"
+    autostart: false
+
+vm_mac_prefix: '52:54:00:ff:ff'
+nfs_mounts_definition:
+  - source: "nas.home:/volume1/data"
+    path: "/mnt/nas/data"
+    opts: "hard,nfsvers=4.1,nofail,x-systemd.automount,x-systemd.mount-timeout=infinity,retry=10000,rsize=1048576,wsize=1048576,noatime"
+...
