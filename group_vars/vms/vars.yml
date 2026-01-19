@@ -11,10 +11,12 @@ ip_direct_setup_ipam_network_template: 'direct-connection-vm.j2'
 ip_direct_setup_physical_interface: "{{ physical_interface_2 }}"
 ip_direct_setup_ipv4_address: "{{ ipv4_address_2 }}"
 
+needs_extra_disk: "{{ vm_definitions[inventory_hostname]['extra_disks'][0]['target'] is defined }}"
 init_disk_target: "{{ vm_definitions[inventory_hostname]['extra_disks'][0]['target'] }}"
 init_disk_part_number: '1'
 init_disk_fstype: 'ext4'
 init_disk_mount_point: '/docker'
 
+needs_swap: "{{ vm_definitions[inventory_hostname]['swap'] is defined }}"
 add_swap_size: "{{ vm_definitions[inventory_hostname]['swap'] }}"
 ...

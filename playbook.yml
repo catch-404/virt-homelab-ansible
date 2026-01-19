@@ -43,11 +43,11 @@
     - name: Add swapfile
       ansible.builtin.include_role:
         name: add_swap
-      when: add_swap_size is defined
+      when: needs_swap
     - name: Partition and format extra disk
       ansible.builtin.include_role:
         name: init_disk
-      when: init_disk_target is defined
+      when: needs_extra_disk
 
 - name: Setup hosts & NAS interconnectivity
   hosts: all
