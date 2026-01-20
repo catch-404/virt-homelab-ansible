@@ -60,9 +60,17 @@
   when: vm_create_needs_creation
   register: vm_create_is_defined
 
+- name: "Check if VM is running [{{ vm_name }}]"
+  ansible.builtin.shell: set -o pipefail && virsh list --all --state-running --name | grep -x "{{ vm_name }}"
+  changed_when: false
+  failed_when: vm_create_running_check.stderr | length > 0 # hacky way of failing if anything but grep fails
+  register: vm_create_running_check
+
 - name: "Handle additional disk(s) [{{ vm_name }}]"
   ansible.builtin.include_tasks: 'handle_disks.yml'
   vars:
+    extra_disk_template: "{{ disk_item.template }}"
+    extra_disk_xml: "{{ vm_create_definitions_dir }}/{{ vm_name }}_{{ disk_item.suffix }}.xml"
     extra_disk_name: "{{ vm_name }}_{{ disk_item.suffix }}.qcow2"
     extra_disk_path: "{{ vm_create_libvirt_disk_pool_path }}/{{ extra_disk_name }}"
     extra_disk_size: "{{ disk_item.size }}"
@@ -72,7 +80,7 @@
   loop_control:
     loop_var: disk_item
 
-- name: "Check if VM is running [{{ vm_name }}]"
+- name: "Check if VM is running [{{ vm_name }}]" # needed because the operation above might have changed that state
   ansible.builtin.shell: set -o pipefail && virsh list --all --state-running --name | grep -x "{{ vm_name }}"
   changed_when: false
   failed_when: vm_create_running_check.stderr | length > 0 # hacky way of failing if anything but grep fails

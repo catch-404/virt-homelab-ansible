@@ -1,13 +1,22 @@
 ---
+- name: "Template disk XML [{{ vm_name }}]"
+  ansible.builtin.template:
+    src: "{{ extra_disk_template }}"
+    dest: "{{ extra_disk_xml }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+  register: vm_create_extra_disk_templating
+
 - name: "Check if disk exists [{{ vm_name }}]"
   ansible.builtin.stat:
     path: "{{ extra_disk_path }}"
-  register: vm_create_extra_disk_existence
+  register: vm_create_extra_disk_existence_check
 
 - name: "Create disk [{{ vm_name }}]"
   ansible.builtin.command: virsh vol-create-as {{ vm_create_libvirt_disk_pool }} {{ extra_disk_name }} {{ extra_disk_size }} --format qcow2
   changed_when: true
-  when: not vm_create_extra_disk_existence.stat.exists
+  when: not vm_create_extra_disk_existence_check.stat.exists
 
 - name: "Check if disk is attached [{{ vm_name }}]"
   ansible.builtin.shell: set -o pipefail && virsh dumpxml {{ vm_name }} | grep "{{ extra_disk_path }}"
@@ -15,8 +24,24 @@
   failed_when: vm_create_extradisk_attached_check.stderr | length > 0 # hacky way of failing if anything but grep fails
   register: vm_create_extradisk_attached_check
 
+- name: "Stop and detach disk [{{ vm_name }}]"
+  when: vm_create_extradisk_attached_check.rc == 0 and vm_create_extra_disk_templating is changed
+  block:
+    - name: "Stop VM [{{ vm_name }}]"
+      ansible.builtin.command: virsh destroy {{ vm_name }} --graceful
+      changed_when: true
+      when: vm_create_running_check.rc == 0
+    - name: "Detach disk [{{ vm_name }}]"
+      ansible.builtin.command: virsh detach-disk {{ vm_name }} {{ extra_disk_target }} --config
+      changed_when: true
+
+# - name: "Attach disk [{{ vm_name }}]"
+#   ansible.builtin.command: virsh attach-disk {{ vm_name }} {{ extra_disk_path }} {{ extra_disk_target }} --subdriver qcow2 --current
+#   changed_when: true
+#   when: vm_create_extradisk_attached_check.rc != 0
+
 - name: "Attach disk [{{ vm_name }}]"
-  ansible.builtin.command: virsh attach-disk {{ vm_name }} {{ extra_disk_path }} {{ extra_disk_target }} --subdriver qcow2 --current
+  ansible.builtin.command: virsh attach-device {{ vm_name }} {{ extra_disk_xml }} --current
   changed_when: true
-  when: vm_create_extradisk_attached_check.rc != 0
+  when: vm_create_extradisk_attached_check.rc != 0 or vm_create_extra_disk_templating is changed
 ...
