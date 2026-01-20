@@ -6,8 +6,19 @@
     update_cache: true
     cache_valid_time: 3600
 
+- name: Check if mount point exists / trigger automount
+  ansible.builtin.stat:
+    path: "{{ nfs_mount_mountpoint }}"
+  register: nfs_mount_mountpoint_existence_check
+
+- name: Update ansible_facts
+  ansible.builtin.setup:
+    gather_subset: ['mounts']
+
 - name: Create mount point & make it immutable # 2 tasks are needed here because chattr +i doesn't play well with recurse option
-  when: nfs_mount_mountpoint not in (ansible_facts['mounts'] | map(attribute='mount'))
+  when: |
+      not nfs_mount_mountpoint_existence_check.stat.exists or
+      nfs_mount_mountpoint not in (ansible_facts['mounts'] | map(attribute='mount'))
   block:
     - name: Create mount point
       ansible.builtin.file:
