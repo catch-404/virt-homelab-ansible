@@ -58,7 +58,6 @@
   ansible.builtin.command: virsh define {{ vm_xml }}
   changed_when: true
   when: vm_create_needs_creation
-  register: vm_create_is_defined
 
 - name: "Check if VM is running [{{ vm_name }}]"
   ansible.builtin.shell: set -o pipefail && virsh list --all --state-running --name | grep -x "{{ vm_name }}"
@@ -71,6 +70,8 @@
   vars:
     extra_disk_template: "{{ disk_item.template }}"
     extra_disk_xml: "{{ vm_create_definitions_dir }}/{{ vm_name }}_{{ disk_item.suffix }}.xml"
+    extra_vol_template: "{{ disk_item.vol_template }}"
+    extra_vol_xml: "{{ vm_create_definitions_dir }}/{{ vm_name }}_{{ disk_item.suffix }}_vol.xml"
     extra_disk_name: "{{ vm_name }}_{{ disk_item.suffix }}.qcow2"
     extra_disk_path: "{{ vm_create_libvirt_disk_pool_path }}/{{ extra_disk_name }}"
     extra_disk_size: "{{ disk_item.size }}"

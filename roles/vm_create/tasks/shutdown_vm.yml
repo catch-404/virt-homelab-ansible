@@ -1,0 +1,27 @@
+---
+- name: "Attempt graceful shutdown [{{ vm_name }}]"
+  ansible.builtin.command: virsh shutdown {{ vm_name }}
+  changed_when: true
+
+- name: "Wait for VM to stop [{{ vm_name }}]"
+  ansible.builtin.shell: set -o pipefail && virsh list --state-running --name | grep -x "{{ vm_name }}"
+  register: vm_create_shutdown_wait_check
+  until: vm_create_shutdown_wait_check.rc != 0
+  retries: 30
+  delay: 2
+  failed_when: false
+  changed_when: false
+
+- name: "Force stop if timeout [{{ vm_name }}]"
+  ansible.builtin.command: virsh destroy {{ vm_name }}
+  changed_when: true
+  when: vm_create_shutdown_wait_check.rc == 0
+  register: vm_create_shutdown_destroy
+
+- name: "Verify VM is stopped [{{ vm_name }}]"
+  ansible.builtin.shell: set -o pipefail && virsh list --state-running --name | grep -x "{{ vm_name }}"
+  register: vm_create_shutdown_final_check
+  failed_when: vm_create_shutdown_final_check.rc == 0 or vm_create_shutdown_final_check.stderr | length > 0
+  changed_when: false
+  when: vm_create_shutdown_destroy is changed # noqa: no-handler
+...

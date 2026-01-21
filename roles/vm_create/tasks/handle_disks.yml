@@ -1,4 +1,71 @@
 ---
+- name: "Template volume XML [{{ vm_name }}]"
+  ansible.builtin.template:
+    src: "{{ extra_vol_template }}"
+    dest: "{{ extra_vol_xml }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+  register: vm_create_extra_vol_templating
+
+- name: "Check if volume exists [{{ vm_name }}]"
+  ansible.builtin.stat:
+    path: "{{ extra_disk_path }}"
+  register: vm_create_extra_vol_existence_check
+
+- name: "Acknowledge whether volume should be recreated [{{ vm_name }}]"
+  ansible.builtin.set_fact:
+    vm_create_vol_needs_recreation: "{{ vm_create_extra_vol_templating is changed and vm_create_extra_vol_existence_check.stat.exists }}"
+
+- name: "Ask for confirmation for volume deletion [{{ vm_name }}]"
+  ansible.builtin.pause:
+    prompt: |-
+      WARNING: Volume {{ extra_disk_name }} exists, but its definition has changed!
+      If you wish to re-create {{ extra_disk_name }}, the VM {{ vm_name }} needs to be re-created as well
+
+      Ansible cannot automatically recreate volumes on existing VMs because:
+      - The VM's fstab expects the disk to have a filesystem
+      - A new volume would be empty/unformatted
+      - This would cause the VM to fail to boot
+
+      Type 'YES' to recreate both {{ vm_name }} and {{ extra_disk_name }}, or anything else to keep the existing situation as is.
+      (RECREATING WILL ERASE ALL DATA ON {{ vm_name }} AND {{ extra_disk_name }} PERMANENTLY)
+  when: vm_create_vol_needs_recreation
+  register: vm_create_vol_pause
+
+- name: "Re-acknowledge whether VM should be recreated [{{ vm_name }}]"
+  ansible.builtin.set_fact:
+    vm_create_vol_needs_recreation: "{{ vm_create_vol_needs_recreation and vm_create_vol_pause is not skipped and vm_create_vol_pause.user_input == 'YES' }}"
+
+- name: "Recreate VM [{{ vm_name }}]"
+  when: vm_create_vol_needs_recreation
+  block:
+    - name: "Stop VM [{{ vm_name }}]"
+      ansible.builtin.command: virsh destroy {{ vm_name }}
+      register: vm_create_stop_vm
+      failed_when: vm_create_stop_vm.rc != 0 and 'domain is not running' not in vm_create_stop_vm.stderr
+      changed_when: true
+    - name: "Undefine VM [{{ vm_name }}]"
+      ansible.builtin.command: virsh undefine {{ vm_name }} --nvram
+      changed_when: true
+    - name: "Delete VM disks [{{ vm_name }}]"
+      ansible.builtin.command: virsh vol-delete {{ vm_disk }} {{ vm_create_libvirt_disk_pool }}
+      changed_when: true
+    - name: "Delete extra volume [{{ vm_name }}]"
+      ansible.builtin.command: virsh vol-delete {{ extra_disk_name }} {{ vm_create_libvirt_disk_pool }}
+      changed_when: true
+    - name: "Prepare VM OS disk [{{ vm_name }}]"
+      ansible.builtin.command: virsh vol-clone {{ vm_create_base_disk }} {{ vm_disk }} {{ vm_create_libvirt_disk_pool }}
+      changed_when: true
+    - name: "Define VM [{{ vm_name }}]"
+      ansible.builtin.command: virsh define {{ vm_xml }}
+      changed_when: true
+
+- name: "Create volume [{{ vm_name }}]"
+  ansible.builtin.command: virsh vol-create {{ vm_create_libvirt_disk_pool }} {{ extra_vol_xml }}
+  changed_when: true
+  when: not vm_create_extra_vol_existence_check.stat.exists or vm_create_vol_needs_recreation
+
 - name: "Template disk XML [{{ vm_name }}]"
   ansible.builtin.template:
     src: "{{ extra_disk_template }}"
@@ -7,16 +74,6 @@
     group: "{{ ansible_user }}"
     mode: '0644'
   register: vm_create_extra_disk_templating
-
-- name: "Check if disk exists [{{ vm_name }}]"
-  ansible.builtin.stat:
-    path: "{{ extra_disk_path }}"
-  register: vm_create_extra_disk_existence_check
-
-- name: "Create disk [{{ vm_name }}]"
-  ansible.builtin.command: virsh vol-create-as {{ vm_create_libvirt_disk_pool }} {{ extra_disk_name }} {{ extra_disk_size }} --format qcow2
-  changed_when: true
-  when: not vm_create_extra_disk_existence_check.stat.exists
 
 - name: "Check if disk is attached [{{ vm_name }}]"
   ansible.builtin.command: virsh domblklist {{ vm_name }}
@@ -27,12 +84,13 @@
   ansible.builtin.set_fact:
     vm_create_extradisk_is_attached: "{{ extra_disk_path in vm_create_extradisk_attached_check.stdout }}"
 
-- name: "Stop and detach disk [{{ vm_name }}]"
-  when: vm_create_extradisk_is_attached and vm_create_extra_disk_templating is changed
+- name: "Stop VM, detach disk and acknowledge state [{{ vm_name }}]"
+  when:
+    - vm_create_extradisk_is_attached
+    - vm_create_extra_disk_templating is changed
   block:
     - name: "Stop VM [{{ vm_name }}]"
-      ansible.builtin.command: virsh destroy {{ vm_name }} --graceful
-      changed_when: true
+      ansible.builtin.include_tasks: 'shutdown_vm.yml'
       when: vm_create_running_check.rc == 0
     - name: "Detach disk [{{ vm_name }}]"
       ansible.builtin.command: virsh detach-disk {{ vm_name }} {{ extra_disk_target }} --config
@@ -41,5 +99,5 @@
 - name: "Attach disk [{{ vm_name }}]"
   ansible.builtin.command: virsh attach-device {{ vm_name }} {{ extra_disk_xml }} --current
   changed_when: true
-  when: (not vm_create_extradisk_is_attached) or vm_create_extra_disk_templating is changed
+  when: vm_create_extra_disk_templating is changed or not vm_create_extradisk_is_attached
 ...
