@@ -12,9 +12,6 @@
     - name: Install and configure libvirt
       ansible.builtin.include_role:
         name: kvm_install
-    - name: Create base 0-debian image
-      ansible.builtin.include_role:
-        name: basevm_create
     - name: Configure iGPU passthrough
       ansible.builtin.include_role:
         name: igpu_passthrough

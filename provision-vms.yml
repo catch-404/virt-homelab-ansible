@@ -1,4 +1,12 @@
 ---
+- name: Create base VM image
+  hosts: hypervisor
+  become: true
+  tasks:
+    - name: Create base 0-debian image
+      ansible.builtin.include_role:
+        name: basevm_create
+
 - name: Create VMs
   hosts: hypervisor
   environment:
