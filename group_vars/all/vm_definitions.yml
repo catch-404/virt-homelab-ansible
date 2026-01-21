@@ -1,7 +1,6 @@
 ---
 vm_definitions:
   medina:
-    user: 'drummer'
     template: 'vm.xml.j2'
     mem: 1
     cpus: 1
@@ -13,7 +12,6 @@ vm_definitions:
         target: 'vdb'
         template: 'extra_disk.xml.j2'
   razorback:
-    user: 'bobbie'
     template: 'vm_igpu.xml.j2'
     mem: 4
     cpus: 2
@@ -26,7 +24,6 @@ vm_definitions:
         template: 'extra_disk.xml.j2'
     nfs_mount: true
   canterbury:
-    user: 'amos'
     template: 'vm.xml.j2'
     mem: 20
     cpus: 8
@@ -39,14 +36,12 @@ vm_definitions:
         template: 'extra_disk.xml.j2'
     nfs_mount: true
   tycho-01:
-    user: 'ashford'
     template: 'vm.xml.j2'
     mem: 2
     cpus: 2
     mac: "{{ vm_mac_prefix }}:04"
     autostart: false
   tycho-02:
-    user: 'ashford'
     template: 'vm.xml.j2'
     mem: 2
     cpus: 2

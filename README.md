@@ -8,4 +8,4 @@ This is mostly meant as my own documentation of the state of my homelab, though 
 
 Very much still a WIP.
 
-Machine and user names are from [The Expanse](https://en.wikipedia.org/wiki/The_Expanse_(TV_series))
+Machine names are from [The Expanse](https://en.wikipedia.org/wiki/The_Expanse_(TV_series))
