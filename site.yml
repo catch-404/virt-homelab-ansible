@@ -1,0 +1,6 @@
+---
+- name: Provision hypervisor
+  import_playbook: provision-hypervisor.yml
+- name: Provision VMs
+  import_playbook: provision-vms.yml
+...

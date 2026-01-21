@@ -1,0 +1,21 @@
+---
+- name: Provision hypervisor
+  hosts: hypervisor
+  become: true
+  tasks:
+    - name: Prepare basic OS configuration
+      ansible.builtin.include_role:
+        name: os_prepare
+    - name: Configure NFS mount
+      ansible.builtin.include_role:
+        name: nfs_mount
+    - name: Install and configure libvirt
+      ansible.builtin.include_role:
+        name: kvm_install
+    - name: Create base 0-debian image
+      ansible.builtin.include_role:
+        name: basevm_create
+    - name: Configure iGPU passthrough
+      ansible.builtin.include_role:
+        name: igpu_passthrough
+...
