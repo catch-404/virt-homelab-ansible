@@ -3,6 +3,8 @@
   import_playbook: provision-hypervisor.yml
 - name: Provision VMs
   import_playbook: provision-vms.yml
+- name: Bootstrap VMs
+  import_playbook: bootstrap-vms.yml
 - name: Provision docker resources
   import_playbook: provision-docker.yml
 ...
