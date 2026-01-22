@@ -26,3 +26,8 @@ vms:
       ansible_host: tycho-02.home
       ansible_user: holden
       ansible_port: 22
+docker:
+  hosts:
+    medina:
+    razorback:
+    canterbury:

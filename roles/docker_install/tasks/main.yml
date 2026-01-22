@@ -1,0 +1,99 @@
+---
+- name: Download necessary dependencies
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Map Ansible architecture to dpkg architecture
+  ansible.builtin.set_fact:
+    docker_install_dpkg_architecture: "{{ arch_mapping[ansible_facts['architecture']] }}"
+  vars:
+    arch_mapping:
+      x86_64: amd64
+      aarch64: arm64
+
+- name: Add docker repository
+  ansible.builtin.deb822_repository:
+    name: 'docker'
+    types: 'deb'
+    uris: 'https://download.docker.com/linux/debian'
+    suites: "{{ ansible_facts['distribution_release'] }}"
+    components: 'stable'
+    architectures: "{{ docker_install_dpkg_architecture }}"
+    signed_by: 'https://download.docker.com/linux/debian/gpg'
+    state: present
+    enabled: true
+  register: docker_install_repo_added
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+  when: docker_install_repo_added is changed # noqa: no-handler
+
+- name: Remove conflicting packages
+  ansible.builtin.apt:
+    name:
+      - 'docker.io'
+      - 'docker-doc'
+      - 'docker-compose'
+      - 'podman-docker'
+      - 'containerd'
+      - 'runc'
+    state: absent
+
+- name: Install Docker
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create docker group
+  ansible.builtin.group:
+    name: 'docker'
+    state: present
+
+- name: Add 'ansible_user' in the group 'docker'
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: 'docker'
+    append: true
+    state: present
+
+- name: Add override to make docker depend on nfs mount
+  when: needs_nfs_mount
+  block:
+    - name: Create docker.service.d directory
+      ansible.builtin.file:
+        path: '/etc/systemd/system/docker.service.d'
+        state: directory
+        owner: 'root'
+        group: 'root'
+        mode: '0755'
+    - name: Copy docker service override.conf
+      ansible.builtin.template:
+        src: 'docker-override.conf.j2'
+        dest: '/etc/systemd/system/docker.service.d/override.conf'
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reload systemd daemon
+
+- name: Enable and start Docker services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - 'docker.service'
+    - 'containerd.service'
+...
