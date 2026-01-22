@@ -43,10 +43,14 @@
       ansible.builtin.include_role:
         name: add_swap
       when: needs_swap
-    - name: Partition and format extra disk
+    - name: Partition and format extra disk # mountpoints ownership/permissions need to change
       ansible.builtin.include_role:
         name: init_disk
       when: needs_extra_disk
+      loop: "{{ vm_definitions[inventory_hostname]['extra_disks'] }}"
+      vars:
+        init_disk_target: "{{ item['target'] }}"
+        init_disk_mount_point: "{{ item['mountpoint'] }}"
     - name: Configure NFS mount
       ansible.builtin.include_role:
         name: nfs_mount

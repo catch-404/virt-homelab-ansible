@@ -8,6 +8,7 @@ vm_definitions:
     swap: 2
     extra_disks:
       - suffix: 'appdata'
+        mountpoint: '/docker'
         size: '16'
         target: 'vdb'
         template: 'extra_disk.xml.j2'
@@ -20,6 +21,7 @@ vm_definitions:
     swap: 4
     extra_disks:
       - suffix: 'appdata'
+        mountpoint: '/docker'
         size: '64'
         target: 'vdb'
         template: 'extra_disk.xml.j2'
@@ -33,11 +35,13 @@ vm_definitions:
     swap: 4
     extra_disks:
       - suffix: 'appdata'
+        mountpoint: '/docker'
         size: '64'
         target: 'vdb'
         template: 'extra_disk.xml.j2'
         vol_template: 'extra_vol.xml.j2'
       - suffix: 'downloads'
+        mountpoint: '/temp'
         size: '150'
         target: 'vdc'
         template: 'extra_disk.xml.j2'
