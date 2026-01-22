@@ -69,25 +69,6 @@
     append: true
     state: present
 
-- name: Add override to make docker depend on nfs mount
-  when: needs_nfs_mount
-  block:
-    - name: Create docker.service.d directory
-      ansible.builtin.file:
-        path: '/etc/systemd/system/docker.service.d'
-        state: directory
-        owner: 'root'
-        group: 'root'
-        mode: '0755'
-    - name: Copy docker service override.conf
-      ansible.builtin.template:
-        src: 'docker-override.conf.j2'
-        dest: '/etc/systemd/system/docker.service.d/override.conf'
-        owner: root
-        group: root
-        mode: '0644'
-      notify: Reload systemd daemon
-
 - name: Enable and start Docker services
   ansible.builtin.service:
     name: "{{ item }}"
