@@ -60,6 +60,7 @@
     - name: "Define VM [{{ vm_name }}]"
       ansible.builtin.command: virsh define {{ vm_xml }}
       changed_when: true
+      register: vm_create_vm_was_recreated
 
 - name: "Create volume [{{ vm_name }}]"
   ansible.builtin.command: virsh vol-create {{ vm_create_libvirt_disk_pool }} {{ extra_vol_xml }}
@@ -96,8 +97,22 @@
       ansible.builtin.command: virsh detach-disk {{ vm_name }} {{ extra_disk_target }} --config
       changed_when: true
 
+- name: "Attach all disks [{{ vm_name }}]"
+  ansible.builtin.command: virsh attach-device {{ vm_name }} {{ vm_create_definitions_dir }}/{{ vm_name }}_{{ reattach_disk_item.suffix }}.xml --current
+  changed_when: true
+  loop: "{{ vm_extra_disks }}"
+  loop_control:
+    loop_var: reattach_disk_item
+  when: vm_create_vm_was_recreated is defined and vm_create_vm_was_recreated is changed
+
 - name: "Attach disk [{{ vm_name }}]"
   ansible.builtin.command: virsh attach-device {{ vm_name }} {{ extra_disk_xml }} --current
   changed_when: true
-  when: vm_create_extra_disk_templating is changed or not vm_create_extradisk_is_attached
+  register: vm_create_attach_result
+  failed_when:
+    - vm_create_attach_result.rc != 0
+    - "'duplicated for disk sources' not in vm_create_attach_result.stderr"
+  when:
+    - vm_create_extra_disk_templating is changed or not vm_create_extradisk_is_attached
+    - vm_create_vm_was_recreated is not defined or vm_create_vm_was_recreated is not changed
 ...
