@@ -23,9 +23,9 @@
   ansible.builtin.file:
     path: "{{ init_disk_mount_point }}"
     state: directory
-    owner: 'root'
-    group: 'root'
-    mode: '0755'
+    owner: "{{ init_disk_owner }}"
+    group: "{{ init_disk_group }}"
+    mode: "{{ init_disk_mode }}"
 
 - name: Update ansible_facts
   ansible.builtin.setup:
