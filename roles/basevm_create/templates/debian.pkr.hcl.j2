@@ -37,6 +37,12 @@ variable "systemd_unit_file" {
   description = "Path to systemd unit file"
 }
 
+variable "getty_autologin_file" {
+  type    = string
+  default = "files/autologin.conf"
+  description = "Path to getty drop in override file"
+}
+
 variable "sudo_user" {
   type    = string
   default = "{{ basevm_create_sudo_user }}"
@@ -108,6 +114,17 @@ build {
       "echo '%sudo ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/nopasswd",
       "chmod 440 /etc/sudoers.d/nopasswd"
     ]
+  }
+  
+  # Setup auto-login for {{ basevm_create_sudo_user }} user
+  provisioner "shell" {
+    inline = [
+      "mkdir -p /etc/systemd/system/serial-getty@.service.d"
+    ]
+  }  
+  provisioner "file" {
+    source      = var.getty_autologin_file
+    destination = "/etc/systemd/system/serial-getty@.service.d/autologin.conf"
   }
   
   # Send public SSH key for {{ basevm_create_sudo_user }} user

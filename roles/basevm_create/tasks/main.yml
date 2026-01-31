@@ -77,6 +77,8 @@
       dest: '{{ basevm_create_packer_root_dir }}/debian.pkr.hcl'
     - src: 'preseed.cfg.j2'
       dest: '{{ basevm_create_packer_root_dir }}/http/preseed.cfg'
+    - src: 'autologin.conf.j2'
+      dest: '{{ basevm_create_packer_root_dir }}/files/autologin.conf'
   register: basevm_create_packer_files_template
 
 - name: Copy packer files

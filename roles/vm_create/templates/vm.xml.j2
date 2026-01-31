@@ -34,11 +34,14 @@
       <source bridge="br1"/>
       <model type="virtio"/>
     </interface>
-  <channel type='unix'>
-    <target type='virtio' name='org.qemu.guest_agent.0'/>
-  </channel>
-  <rng model="virtio">
-    <backend model="random">/dev/urandom</backend>
-  </rng>
+    <console type='pty'>
+      <target type='virtio' port='0'/>
+    </console>
+    <channel type='unix'>
+      <target type='virtio' name='org.qemu.guest_agent.0'/>
+    </channel>
+    <rng model="virtio">
+      <backend model="random">/dev/urandom</backend>
+    </rng>
   </devices>
 </domain>
