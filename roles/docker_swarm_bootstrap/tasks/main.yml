@@ -1,0 +1,36 @@
+---
+- name: Install dependencies
+  ansible.builtin.apt:
+    name: python3-docker
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Set manager IP fact
+  ansible.builtin.set_fact:
+    docker_swarm_bootstrap_manager_ip: "{{ ansible_facts['default_ipv4']['address'] }}:2377"
+  run_once: true
+  delegate_to: "{{ groups['swarm_manager'][0] }}"
+
+- name: Initialize docker swarm
+  community.docker.docker_swarm:
+    state: present
+    advertise_addr: "{{ docker_swarm_bootstrap_manager_ip }}"
+  run_once: true
+  delegate_to: "{{ groups['swarm_manager'][0] }}"
+  register: docker_swarm_bootstrap_init
+
+- name: Join swarm
+  community.docker.docker_swarm:
+    state: join
+    advertise_addr: "{{ ansible_facts['default_ipv4']['address'] }}"
+    join_token: "{{ docker_swarm_bootstrap_init.swarm_facts.JoinTokens.Worker }}"
+    remote_addrs: ["{{ docker_swarm_bootstrap_manager_ip }}"]
+  when: "'swarm_manager' not in group_names"
+
+# - name: Drain all nodes
+
+# - name: Create overlay network
+
+# create other network on every node
+...

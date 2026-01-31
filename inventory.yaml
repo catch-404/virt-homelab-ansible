@@ -31,3 +31,6 @@ docker:
     medina:
     razorback:
     canterbury:
+swarm_manager:
+  hosts:
+    medina:

@@ -6,4 +6,12 @@
     - name: Install docker
       ansible.builtin.include_role:
         name: docker_install
+
+- name: Provision docker & swarm environment
+  hosts: docker
+  become: true
+  tasks:
+    - name: Bootstrap docker env
+      ansible.builtin.include_role:
+        name: docker_swarm_bootstrap
 ...
