@@ -39,4 +39,12 @@
     passno: 2
     state: mounted
     boot: true
+
+- name: Define mounted disk perms/ownership
+  ansible.builtin.file:
+    path: "{{ init_disk_mount_point }}"
+    state: directory
+    owner: "{{ init_disk_owner }}"
+    group: "{{ init_disk_group }}"
+    mode: "{{ init_disk_mode }}"
 ...
