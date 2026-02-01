@@ -9,6 +9,23 @@
     mode: '0644'
   notify: Update GRUB
 
+- name: Create recovery boot entry (no vfio)
+  notify: Update GRUB
+  block:
+    - name: Get root filesystem UUID
+      ansible.builtin.command: findmnt -n -o UUID /
+      register: igpu_passthrough_root_uuid
+      changed_when: false
+    - name: Modify 40_custom to create boot entry
+      ansible.builtin.blockinfile:
+        path: "/etc/grub.d/40_custom"
+        marker: "# {mark} ANSIBLE MANAGED ENTRY"
+        block: |
+          menuentry 'Debian GNU/Linux (Recovery - No GPU Passthrough)' {
+              linux /vmlinuz root=UUID={{ igpu_passthrough_root_uuid.stdout }} ro modprobe.blacklist=vfio_pci,vfio,vfio_iommu_type1
+              initrd /initrd.img
+          }
+
 - name: Add necessary modules to initramfs
   ansible.builtin.blockinfile:
     path: "/etc/modules"
