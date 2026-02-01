@@ -13,24 +13,43 @@
   delegate_to: "{{ groups['swarm_manager'][0] }}"
 
 - name: Initialize docker swarm
-  community.docker.docker_swarm:
-    state: present
-    advertise_addr: "{{ docker_swarm_bootstrap_manager_ip }}"
   run_once: true
   delegate_to: "{{ groups['swarm_manager'][0] }}"
-  register: docker_swarm_bootstrap_init
+  block:
+    - name: Initialize swarm
+      community.docker.docker_swarm:
+        state: present
+        advertise_addr: "{{ docker_swarm_bootstrap_manager_ip }}"
+    - name: Fetch swarm facts
+      community.docker.docker_swarm_info:
+      register: docker_swarm_bootstrap_facts
 
 - name: Join swarm
   community.docker.docker_swarm:
     state: join
     advertise_addr: "{{ ansible_facts['default_ipv4']['address'] }}"
-    join_token: "{{ docker_swarm_bootstrap_init.swarm_facts.JoinTokens.Worker }}"
+    join_token: "{{ docker_swarm_bootstrap_facts.swarm_facts['JoinTokens']['Worker'] }}"
     remote_addrs: ["{{ docker_swarm_bootstrap_manager_ip }}"]
   when: "'swarm_manager' not in group_names"
 
-# - name: Drain all nodes
+- name: Create main overlay network
+  community.docker.docker_network:
+    name: "{{ docker_swarm_bootstrap_overlay_network_name }}"
+    driver: 'overlay'
+    attachable: true
+    ipam_config:
+      - subnet: "{{ docker_swarm_bootstrap_overlay_network_prefix }}.0/24"
+        gateway: "{{ docker_swarm_bootstrap_overlay_network_prefix }}.254"
+    state: present
+  run_once: true
+  delegate_to: "{{ groups['swarm_manager'][0] }}"
 
-# - name: Create overlay network
-
-# create other network on every node
+- name: Create main bridge network per host
+  community.docker.docker_network:
+    name: "{{ docker_swarm_bootstrap_bridge_network_name }}"
+    driver: 'bridge'
+    ipam_config:
+      - subnet: "{{ docker_swarm_bootstrap_bridge_network_prefix }}.0/24"
+        gateway: "{{ docker_swarm_bootstrap_bridge_network_prefix }}.254"
+    state: present
 ...

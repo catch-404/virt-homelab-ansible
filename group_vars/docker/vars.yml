@@ -4,4 +4,14 @@ docker_user: 'amos'
 docker_user_uid: '1030'
 docker_group: 'docker-limited'
 docker_group_gid: '65536'
+
+docker_install_group: "docker-limited"
+docker_install_gid: "65536"
+docker_install_user: "amos"
+docker_install_uid: "1030"
+
+docker_swarm_bootstrap_overlay_network_name: "default-overlay"
+docker_swarm_bootstrap_overlay_network_prefix: "172.30.0"
+docker_swarm_bootstrap_bridge_network_name: "default-bridge"
+docker_swarm_bootstrap_bridge_network_prefix: "172.20.0"
 ...

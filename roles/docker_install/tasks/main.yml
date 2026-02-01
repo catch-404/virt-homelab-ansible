@@ -69,6 +69,20 @@
     append: true
     state: present
 
+- name: Create unprivileged group for docker workloads
+  ansible.builtin.group:
+    name: "{{ docker_install_group }}"
+    gid: "{{ docker_install_gid }}"
+    state: present
+
+- name: Create unprivileged user for docker workloads
+  ansible.builtin.user:
+    name: "{{ docker_install_user }}"
+    uid: "{{ docker_install_uid }}"
+    group: "{{ docker_install_group }}"
+    shell: "/usr/sbin/nologin"
+    state: present
+
 - name: Enable and start Docker services
   ansible.builtin.service:
     name: "{{ item }}"
