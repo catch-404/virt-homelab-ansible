@@ -37,4 +37,24 @@
   notify:
     - Update initramfs
     - Reboot
+
+- name: Make power button trigger reboot
+  notify: Restart systemd-logind
+  block:
+    - name: Create logind.conf.d directory
+      ansible.builtin.file:
+        path: '/etc/systemd/logind.conf.d'
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+    - name: Add drop-in file
+      ansible.builtin.copy:
+        dest: '/etc/systemd/logind.conf.d/reboot-button.conf'
+        content: |
+          [Login]
+          HandlePowerKey=reboot
+        owner: root
+        group: root
+        mode: '0644'
 ...
