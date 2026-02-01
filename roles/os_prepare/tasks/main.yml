@@ -107,8 +107,6 @@
         state: present
         backup: true
 
-# add something to enable wol, aka install ethtool and do the service
-
 - name: Flush handlers (need networking reset before DNS change)
   ansible.builtin.meta: flush_handlers
 
