@@ -1,0 +1,11 @@
+[Unit]
+Description=Backup of VM %i
+RequiresMountsFor={{ vm_backup_nas_mountpoint }}
+
+[Service]
+Type=oneshot
+Environment="ACCEPTED_VMS={{ vm_backup_domains_to_backup | join(',') }}"
+Environment="LIBVIRT_POOL={{ vm_backup_libvirt_pool }}"
+Environment="BACKUP_DEST_DIR={{ vm_backup_destination_parent }}"
+Environment="MAX_BACKUP_FILE_AGE={{ vm_backup_max_backup_age }}"
+ExecStart=/usr/local/bin/backup_vm.sh %i %i_appdata.qcow2

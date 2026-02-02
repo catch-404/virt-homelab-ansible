@@ -7,6 +7,14 @@
       ansible.builtin.include_role:
         name: basevm_create
 
+- name: Set up qcow2 disk backup script, service and timer
+  hosts: hypervisor
+  become: true
+  tasks:
+    - name: Set up backup script and related systemd units
+      ansible.builtin.include_role:
+        name: vm_backup
+
 - name: Create VMs
   hosts: hypervisor
   environment:

@@ -1,0 +1,36 @@
+---
+- name: Copy backup script & systemd timer
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: 'root'
+    group: 'root'
+    mode: "{{ item.mode }}"
+  loop:
+    - src: 'backup_vm.sh'
+      dest: '/usr/local/bin/backup_vm.sh'
+      mode: '0755'
+    - src: 'backup-vm@.timer'
+      dest: '/etc/systemd/system/backup-vm@.timer'
+      mode: '0644'
+  notify: Reload systemd daemon
+
+- name: Template systemd service
+  ansible.builtin.template:
+    src: "backup-vm@.service.j2"
+    dest: "/etc/systemd/system/backup-vm@.service"
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  notify: Reload systemd daemon
+
+- name: Trigger handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable & start backup timer
+  ansible.builtin.systemd_service:
+    name: "backup-vm@{{ item }}.timer"
+    state: started
+    enabled: true
+  loop: "{{ vm_backup_domains_to_backup }}"
+...

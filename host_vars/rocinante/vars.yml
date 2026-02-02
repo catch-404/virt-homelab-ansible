@@ -33,4 +33,10 @@ vm_create_libvirt_disk_pool: "disks"
 vm_create_libvirt_disk_pool_path: "{{ libvirt_disk_pool_path }}"
 vm_create_base_disk: "{{ base_disk }}"
 vm_create_definitions: "{{ vm_definitions }}"
+
+vm_backup_domains_to_backup: ["medina","razorback","canterbury"]
+vm_backup_nas_mountpoint: "{{ nfs_mount_definition['path'] }}"
+vm_backup_libvirt_pool: "{{ libvirt_disk_pool_path }}"
+vm_backup_destination_parent: "{{ vm_backup_nas_mountpoint }}/backup/roci/disks.restic-exclude"
+vm_backup_max_backup_age: "30"
 ...

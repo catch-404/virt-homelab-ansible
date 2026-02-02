@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly backup timer for VM %i
+
+[Timer]
+OnCalendar=Sun *-*-* 05:00:00
+Persistent=true
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target
