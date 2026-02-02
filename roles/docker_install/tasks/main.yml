@@ -83,6 +83,28 @@
     shell: "/usr/sbin/nologin"
     state: present
 
+- name: Increase docker stop timeouts
+  block:
+    - name: Create docker systemd drop-in directory
+      ansible.builtin.file:
+        path: '/etc/systemd/system/docker.service.d'
+        owner: 'root'
+        group: 'root'
+        mode: '0755'
+        state: directory
+    - name: Copy systemd drop-in file & docker daemon.json
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: 'root'
+        group: 'root'
+        mode: '0644'
+      loop:
+        - src: 'override.conf'
+          dest: '/etc/systemd/system/docker.service.d/override.conf'
+        - src: 'daemon.json'
+          dest: '/etc/docker/daemon.json'
+
 - name: Enable and start Docker services
   ansible.builtin.service:
     name: "{{ item }}"
