@@ -1,7 +1,9 @@
 ---
-- name: Install parted
+- name: Install dependencies
   ansible.builtin.apt:
-    name: parted
+    name:
+      - parted
+      - acl
     state: present
     update_cache: true
     cache_valid_time: 3600
@@ -47,4 +49,21 @@
     owner: "{{ init_disk_owner }}"
     group: "{{ init_disk_group }}"
     mode: "{{ init_disk_mode }}"
+
+- name: Set default ACL for mounted disk path
+  ansible.posix.acl:
+    path: "{{ init_disk_mount_point }}"
+    default: true
+    etype: "{{ acl_item.etype }}"
+    permissions: "{{ acl_item.perms }}"
+    state: present
+  loop:
+    - etype: 'user'
+      perms: 'rwX'
+    - etype: 'group'
+      perms: 'rwX'
+    - etype: 'other'
+      perms: '-'
+  loop_control:
+    loop_var: acl_item
 ...
