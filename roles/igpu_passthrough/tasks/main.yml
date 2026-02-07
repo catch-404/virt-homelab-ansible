@@ -27,13 +27,15 @@
           }
 
 - name: Add necessary modules to initramfs
-  ansible.builtin.blockinfile:
-    path: "/etc/modules"
-    marker: "# {mark} ANSIBLE MANAGED MODULES"
-    block: |
+  ansible.builtin.copy:
+    dest: '/etc/modules-load.d/vfio.conf'
+    content: |
       vfio
       vfio_iommu_type1
       vfio_pci
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
   notify:
     - Update initramfs
     - Reboot
