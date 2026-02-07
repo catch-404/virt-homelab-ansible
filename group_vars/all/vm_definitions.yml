@@ -55,17 +55,11 @@ vm_definitions:
         template: 'extra_disk.xml.j2'
         vol_template: 'extra_vol.xml.j2'
     nfs_mount: true
-  tycho-01:
+  tycho:
     template: 'vm.xml.j2'
-    mem: 2
-    cpus: 2
+    mem: 4
+    cpus: 4
     mac: "{{ vm_mac_prefix }}:04"
-    autostart: false
-  tycho-02:
-    template: 'vm.xml.j2'
-    mem: 2
-    cpus: 2
-    mac: "{{ vm_mac_prefix }}:05"
     autostart: false
 
 vm_mac_prefix: '52:54:00:ff:ff'

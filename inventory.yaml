@@ -18,12 +18,8 @@ vms:
       ansible_host: canterbury.home
       ansible_user: holden
       ansible_port: 22
-    tycho-01:
-      ansible_host: tycho-01.home
-      ansible_user: holden
-      ansible_port: 22
-    tycho-02:
-      ansible_host: tycho-02.home
+    tycho:
+      ansible_host: tycho.home
       ansible_user: holden
       ansible_port: 22
 docker:
