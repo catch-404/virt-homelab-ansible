@@ -62,13 +62,6 @@
     name: 'docker'
     state: present
 
-- name: Add 'ansible_user' in the group 'docker'
-  ansible.builtin.user:
-    name: "{{ ansible_user }}"
-    groups: 'docker'
-    append: true
-    state: present
-
 - name: Create unprivileged group for docker workloads
   ansible.builtin.group:
     name: "{{ docker_install_group }}"
@@ -80,8 +73,19 @@
     name: "{{ docker_install_user }}"
     uid: "{{ docker_install_uid }}"
     group: "{{ docker_install_group }}"
+    create_home: false
     shell: "/usr/sbin/nologin"
     state: present
+
+- name: Add 'ansible_user' in the groups 'docker' and the unprivileged group
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: "{{ item }}"
+    append: true
+    state: present
+  loop:
+    - 'docker'
+    - "{{ docker_install_group }}"
 
 - name: Increase docker stop timeouts
   block:
