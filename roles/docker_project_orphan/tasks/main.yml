@@ -1,0 +1,20 @@
+---
+- name: Get list of existing compose projects
+  ansible.builtin.command: docker compose ls -q
+  changed_when: false
+  register: docker_project_orphan_compose_ls
+
+- name: Set orphans fact
+  ansible.builtin.set_fact:
+    docker_project_orphan_orphans:
+      "{{ docker_project_orphan_compose_ls.stdout_lines | difference(docker_project_orphan_projects_dict | map(attribute='name') | list) }}"
+
+- name: Remove orphan projects
+  community.docker.docker_compose_v2:
+    project_src: "{{ docker_project_orphan_compose_root }}/{{ item }}"
+    project_name: "{{ item }}"
+    remove_images: 'all'
+    remove_volumes: true
+    state: absent
+  loop: "{{ docker_project_orphan_orphans }}"
+...

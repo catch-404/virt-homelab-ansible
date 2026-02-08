@@ -19,4 +19,7 @@ docker_project_create_compose_root: '/docker/projects'
 docker_project_create_appdata_root: '/docker/appdata'
 docker_project_create_user: "{{ docker_user }}"
 docker_project_create_group: "{{ docker_group }}"
+
+docker_project_orphan_compose_root: "{{ docker_project_create_compose_root }}"
+docker_project_orphan_projects_dict: "{{ docker_projects }}"
 ...
