@@ -14,4 +14,40 @@
     - name: Bootstrap docker env
       ansible.builtin.include_role:
         name: docker_swarm_bootstrap
+
+- name: Install dependencies
+  hosts: jellyfin
+  become: true
+  tasks:
+    - name: Install dependencies for jellyfin server
+      ansible.builtin.apt:
+        name:
+          - intel-media-va-driver-non-free
+          - firmware-misc-nonfree
+          - intel-gpu-tools
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+      register: intel_firmware_install
+    - name: Reboot post dependency install
+      ansible.builtin.reboot:
+      when: intel_firmware_install is changed # noqa: no-handler
+
+- name: Deploy docker projects
+  hosts: docker
+  become: true
+  tasks:
+    - name: Deploy compose projects
+      ansible.builtin.include_role:
+        name: docker_project_create
+      loop: "{{ docker_projects | default([], true) }}"
+      loop_control:
+        loop_var: project_item
+      vars:
+        docker_project_create_name: "{{ project_item.name }}"
+        docker_project_create_container_subdir: "{{ project_item.containers_subdirs }}"
+        docker_project_create_extra_dirs: "{{ project_item.additional_dirs }}"
+        docker_project_create_compose_file: "docker_projects/{{ inventory_hostname }}/{{ project_item.name }}.yml"
+
+# TODO: add role/play to handle orphan projects
 ...

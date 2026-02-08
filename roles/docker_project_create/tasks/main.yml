@@ -1,0 +1,57 @@
+---
+- name: Create project compose directory
+  ansible.builtin.file:
+    path: "{{ docker_project_create_compose_dir }}"
+    state: 'directory'
+    owner: "{{ docker_project_create_user }}"
+    group: "{{ docker_project_create_group }}"
+    mode: '2770'
+
+- name: Create project appdata directory
+  ansible.builtin.file:
+    path: "{{ docker_project_create_appdata_dir }}"
+    state: 'directory'
+    owner: "{{ docker_project_create_user }}"
+    group: "{{ docker_project_create_group }}"
+    mode: '2770'
+
+- name: Create container subdirectories (if multi-containers project)
+  ansible.builtin.file:
+    path: "{{ docker_project_create_appdata_dir }}/{{ container_subdir_item }}"
+    state: 'directory'
+    owner: "{{ docker_project_create_user }}"
+    group: "{{ docker_project_create_group }}"
+    mode: '2770'
+  loop: "{{ docker_project_create_container_subdir }}"
+  loop_control:
+    loop_var: container_subdir_item
+  when: docker_project_create_container_subdir is defined
+
+- name: Create additional directories
+  ansible.builtin.file:
+    path: "{{ extra_subdir_item }}"
+    state: 'directory'
+    owner: "{{ docker_project_create_user }}"
+    group: "{{ docker_project_create_group }}"
+    mode: '2770'
+  loop: "{{ docker_project_create_extra_dirs }}"
+  loop_control:
+    loop_var: extra_subdir_item
+  when: docker_project_create_extra_dirs is defined
+
+- name: Copy compose file
+  ansible.builtin.copy:
+    src: "{{ docker_project_create_compose_file }}"
+    dest: "{{ docker_project_create_compose_dir }}/compose.yml"
+    owner: "{{ docker_project_create_user }}"
+    group: "{{ docker_project_create_group }}"
+    mode: '0660'
+
+- name: Deploy compose project
+  community.docker.docker_compose_v2:
+    project_src: "{{ docker_project_create_compose_dir }}"
+    project_name: "{{ docker_project_create_name }}"
+    remove_orphans: true
+    wait: true
+    state: present
+...

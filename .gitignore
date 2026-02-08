@@ -4,3 +4,4 @@ settings.json
 secrets*
 .vscode
 .ansible
+docker_projects

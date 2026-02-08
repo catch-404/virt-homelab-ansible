@@ -1,0 +1,4 @@
+---
+docker_project_create_compose_dir: "{{ docker_project_create_compose_root }}/{{ docker_project_create_name }}"
+docker_project_create_appdata_dir: "{{ docker_project_create_appdata_root }}/{{ docker_project_create_name }}"
+...

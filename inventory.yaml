@@ -30,3 +30,6 @@ docker:
 swarm_manager:
   hosts:
     medina:
+jellyfin:
+  hosts:
+    razorback:
