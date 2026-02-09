@@ -3,7 +3,8 @@ physical_interface_1: 'enp2s0'
 physical_interface_2: 'enp3s0'
 bridge_interface_1: 'br0'
 bridge_interface_2: 'br1'
-libvirt_disk_pool_path: '/var/lib/libvirt/disks'
+libvirt_disk_pool_path: "/var/lib/libvirt/{{ libvirt_disk_pool_name }}"
+libvirt_extra_pool_path: "/var/lib/libvirt/{{ libvirt_extra_pool_name }}"
 base_disk: 'base.qcow2'
 
 os_prepare_ps1: '\[\e[36;1m\]\u@\h\[\e[0m\]:\[\e[34;1m\]\w\[\e[0m\]\$ '
@@ -19,6 +20,11 @@ ip_direct_setup_ipv4_address: "{{ ipv4_address_2 }}"
 
 igpu_passthrough_id: '8086:46a6'
 
+kvm_install_disk_pool_name: "{{ libvirt_disk_pool_name }}"
+kvm_install_extra_pool_name: "{{ libvirt_extra_pool_name }}"
+kvm_install_extra_pool_path: "{{ libvirt_extra_pool_path }}"
+kvm_install_extra_disk_uuid: '4476a012-19b2-4305-9333-3defb94ab9e8'
+
 basevm_create_sudo_user: "holden"
 basevm_create_debian_root_password: "{{ temp_root_pwd }}"
 basevm_create_debian_disk_size: '64G'
@@ -29,12 +35,12 @@ basevm_create_libvirt_image_full_path: "{{ basevm_create_libvirt_output_path }}/
 basevm_create_packer_image_full_path: "{{ basevm_create_packer_root_dir }}/output/{{ basevm_create_image_file_name }}"
 
 vm_create_definitions_dir: "/home/{{ ansible_user }}/definitions"
-vm_create_libvirt_disk_pool: "disks"
+vm_create_libvirt_disk_pool: "{{ libvirt_disk_pool_name }}"
 vm_create_libvirt_disk_pool_path: "{{ libvirt_disk_pool_path }}"
 vm_create_base_disk: "{{ base_disk }}"
 vm_create_definitions: "{{ vm_definitions }}"
 
-vm_backup_domains_to_backup: ["medina","razorback","canterbury"]
+vm_backup_domains_to_backup: ["medina", "razorback", "canterbury"]
 vm_backup_nas_mountpoint: "{{ nfs_mount_definition['path'] }}"
 vm_backup_libvirt_pool: "{{ libvirt_disk_pool_path }}"
 vm_backup_destination_parent: "{{ vm_backup_nas_mountpoint }}/backup/roci/disks.restic-exclude"

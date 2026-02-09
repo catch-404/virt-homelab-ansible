@@ -73,7 +73,9 @@
     extra_vol_template: "{{ disk_item.vol_template }}"
     extra_vol_xml: "{{ vm_create_definitions_dir }}/{{ vm_name }}_{{ disk_item.suffix }}_vol.xml"
     extra_disk_name: "{{ vm_name }}_{{ disk_item.suffix }}.qcow2"
-    extra_disk_path: "{{ vm_create_libvirt_disk_pool_path }}/{{ extra_disk_name }}"
+    extra_disk_pool: "{{ disk_item.pool }}"
+    extra_disk_pool_path: "/var/lib/libvirt/{{ disk_item.pool }}"
+    extra_disk_path: "{{ extra_disk_pool_path }}/{{ extra_disk_name }}"
     extra_disk_size: "{{ disk_item.size }}"
     extra_disk_target: "{{ disk_item.target }}"
   when: (vm_extra_disks is defined) and (vm_extra_disks | length > 0)

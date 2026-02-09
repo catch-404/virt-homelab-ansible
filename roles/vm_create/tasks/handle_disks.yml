@@ -49,13 +49,13 @@
       ansible.builtin.command: virsh undefine {{ vm_name }} --nvram
       changed_when: true
     - name: "Delete VM disks [{{ vm_name }}]"
-      ansible.builtin.command: virsh vol-delete {{ vm_disk }} {{ vm_create_libvirt_disk_pool }}
+      ansible.builtin.command: virsh vol-delete {{ vm_disk }} {{ extra_disk_pool }}
       changed_when: true
     - name: "Delete extra volume [{{ vm_name }}]"
-      ansible.builtin.command: virsh vol-delete {{ extra_disk_name }} {{ vm_create_libvirt_disk_pool }}
+      ansible.builtin.command: virsh vol-delete {{ extra_disk_name }} {{ extra_disk_pool }}
       changed_when: true
     - name: "Prepare VM OS disk [{{ vm_name }}]"
-      ansible.builtin.command: virsh vol-clone {{ vm_create_base_disk }} {{ vm_disk }} {{ vm_create_libvirt_disk_pool }}
+      ansible.builtin.command: virsh vol-clone {{ vm_create_base_disk }} {{ vm_disk }} {{ extra_disk_pool }}
       changed_when: true
     - name: "Define VM [{{ vm_name }}]"
       ansible.builtin.command: virsh define {{ vm_xml }}
@@ -63,7 +63,7 @@
       register: vm_create_vm_was_recreated
 
 - name: "Create volume [{{ vm_name }}]"
-  ansible.builtin.command: virsh vol-create {{ vm_create_libvirt_disk_pool }} {{ extra_vol_xml }}
+  ansible.builtin.command: virsh vol-create {{ extra_disk_pool }} {{ extra_vol_xml }}
   changed_when: true
   when: not vm_create_extra_vol_existence_check.stat.exists or vm_create_vol_needs_recreation
 

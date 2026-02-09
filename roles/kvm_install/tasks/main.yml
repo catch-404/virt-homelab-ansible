@@ -49,28 +49,31 @@
     backup: true
   notify: Apply sysctl params
 
-- name: Create directories for new libvirt pools
+- name: Create directories for main libvirt pool
   ansible.builtin.file:
-    path: "/var/lib/libvirt/{{ item }}"
+    path: "/var/lib/libvirt/{{ kvm_install_disk_pool_name }}"
     state: directory
     owner: root
     group: libvirt
     mode: '0775'
-  loop:
-    - "isos"
-    - "disks"
 
-- name: Create and configure new libvirt pools
+- name: Create and configure main libvirt pool
   ansible.builtin.shell: |
-    virsh pool-define-as {{ item }} dir --target /var/lib/libvirt/{{ item }}
-    virsh pool-build {{ item }}
-    virsh pool-start {{ item }}
-    virsh pool-autostart {{ item }}
+    virsh pool-define-as {{ kvm_install_disk_pool_name }} dir --target /var/lib/libvirt/{{ kvm_install_disk_pool_name }}
+    virsh pool-build {{ kvm_install_disk_pool_name }}
+    virsh pool-start {{ kvm_install_disk_pool_name }}
+    virsh pool-autostart {{ kvm_install_disk_pool_name }}
   args:
-    creates: /etc/libvirt/storage/{{ item }}.xml
-  loop:
-    - "isos"
-    - "disks"
+    creates: /etc/libvirt/storage/{{ kvm_install_disk_pool_name }}.xml
+
+- name: Create and configure additional pool on SATA SSD
+  ansible.builtin.shell: |
+    virsh pool-define-as {{ kvm_install_extra_pool_name }} fs --source-dev /dev/disk/by-uuid/{{ kvm_install_extra_disk_uuid }} --target {{ kvm_install_extra_pool_path }}
+    virsh pool-build {{ kvm_install_extra_pool_name }}
+    virsh pool-start {{ kvm_install_extra_pool_name }}
+    virsh pool-autostart {{ kvm_install_extra_pool_name }}
+  args:
+    creates: /etc/libvirt/storage/{{ kvm_install_extra_pool_name }}.xml
 
 - name: Enable and start libvirtd socket
   ansible.builtin.systemd_service:

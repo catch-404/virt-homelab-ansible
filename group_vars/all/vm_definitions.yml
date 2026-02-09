@@ -8,6 +8,7 @@ vm_definitions:
     swap: 2
     extra_disks:
       - suffix: 'appdata'
+        pool: "{{ libvirt_disk_pool_name }}"
         mountpoint: '/docker'
         gid: "{{ docker_group_gid | default(ansible_user) }}"
         mode: '2770'
@@ -23,6 +24,7 @@ vm_definitions:
     swap: 4
     extra_disks:
       - suffix: 'appdata'
+        pool: "{{ libvirt_disk_pool_name }}"
         mountpoint: '/docker'
         gid: "{{ docker_group_gid | default(ansible_user) }}"
         mode: '2770'
@@ -39,6 +41,7 @@ vm_definitions:
     swap: 4
     extra_disks:
       - suffix: 'appdata'
+        pool: "{{ libvirt_disk_pool_name }}"
         mountpoint: '/docker'
         gid: "{{ docker_group_gid | default(ansible_user) }}"
         mode: '2770'
@@ -47,10 +50,11 @@ vm_definitions:
         template: 'extra_disk.xml.j2'
         vol_template: 'extra_vol.xml.j2'
       - suffix: 'downloads'
+        pool: "{{ libvirt_extra_pool_name }}"
         mountpoint: '/temp'
         gid: "{{ docker_group_gid | default(ansible_user) }}"
         mode: '2770'
-        size: '150'
+        size: '250'
         target: 'vdc'
         template: 'extra_disk.xml.j2'
         vol_template: 'extra_vol.xml.j2'
@@ -63,6 +67,8 @@ vm_definitions:
     autostart: false
 
 vm_mac_prefix: '52:54:00:ff:ff'
+libvirt_disk_pool_name: 'disks'
+libvirt_extra_pool_name: 'sata_ssd_pool'
 nfs_mount_definition:
   source: "nas.home:/volume1/data"
   path: "/mnt/nas/data"
