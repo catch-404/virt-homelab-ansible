@@ -7,4 +7,9 @@
   import_playbook: bootstrap-vms.yml
 - name: Provision docker resources
   import_playbook: provision-docker.yml
+- name: Deploy docker projects
+  import_playbook: deploy-docker-projects.yml
+
+- name: Misc stuff
+  import_playbook: misc.yml
 ...

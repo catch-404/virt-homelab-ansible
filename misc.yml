@@ -1,0 +1,84 @@
+---
+# Generally random stuff that doesn't have a well defined category
+
+- name: Setup log forwarding services
+  hosts: razorback,canterbury
+  serial: 1
+  tasks:
+    - name: Create SSH key pair
+      community.crypto.openssh_keypair:
+        path: "/home/{{ ansible_user }}/.ssh/id_ed25519"
+        type: 'ed25519'
+      register: ssh_key_pair_create
+      notify:
+        - Read public key content
+        - Prompt for addition of public key to VPS authorized_keys
+    - name: Add VPS to ssh config
+      ansible.builtin.blockinfile:
+        path: "/home/{{ ansible_user }}/.ssh/config"
+        block: |
+          Host {{ vps_host }}
+              Hostname {{ vps_ip }}
+              User {{ vps_user }}
+              Port {{ vps_port }}
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0600'
+        create: true
+    - name: Add VPS ssh host key to known_hosts
+      # WARNING: this tends to trigger crowdsec on my VPS
+      # You probably want to add an allowlist entry first:
+      # cscli allowlists add my_allowlist <public_ip> -e 10m
+      ansible.builtin.shell: |
+        ssh-keygen -F "[{{ vps_ip }}]:{{ vps_port }}" ||
+        ssh-keyscan -q -t rsa -p {{ vps_port }} -H {{ vps_ip }} >> /home/{{ ansible_user }}/.ssh/known_hosts
+      register: vps_accept_keys
+      changed_when: '"found" not in vps_accept_keys.stdout'
+    - name: Copy forwarding script & systemd units
+      become: true
+      ansible.builtin.template:
+        src: "{{ inventory_hostname }}/{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: 'root'
+        group: 'root'
+        mode: "{{ item.mode }}"
+      loop:
+        - src: "{{ log_forward_service }}-log-forward.sh.j2"
+          dest: "/usr/local/bin/{{ log_forward_service }}-log-forward.sh"
+          mode: '0755'
+        - src: "{{ log_forward_service }}-forward.service.j2"
+          dest: "/etc/systemd/system/{{ log_forward_service }}-forward.service"
+          mode: '0644'
+        - src: "{{ log_forward_service }}-forward-daily.service.j2"
+          dest: "/etc/systemd/system/{{ log_forward_service }}-forward-daily.service"
+          mode: '0644'
+        - src: "{{ log_forward_service }}-forward-daily.timer.j2"
+          dest: "/etc/systemd/system/{{ log_forward_service }}-forward-daily.timer"
+          mode: '0644'
+      notify: Enable & start services and reload systemd
+  handlers:
+    - name: Read public key content
+      ansible.builtin.slurp:
+        src: "/home/{{ ansible_user }}/.ssh/id_ed25519.pub"
+      register: public_key_content
+    - name: Prompt for addition of public key to VPS authorized_keys
+      ansible.builtin.pause:
+        prompt: |-
+          A new SSH key pair was created!
+
+          Add this public key to {{ vps_host }}:{{ vps_port }} authorized_keys for user {{ vps_user }}:
+
+          {{ public_key_content.content | b64decode }}
+
+          Press Enter when done
+    - name: Enable & start services and reload systemd
+      become: true
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        daemon_reload: true
+        enabled: true
+        state: restarted
+      loop:
+        - "{{ log_forward_service }}-forward.service"
+        - "{{ log_forward_service }}-forward-daily.timer"
+...

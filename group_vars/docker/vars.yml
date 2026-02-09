@@ -4,6 +4,8 @@ docker_user: 'amos'
 docker_user_uid: '1030'
 docker_group: 'docker-limited'
 docker_group_gid: '65536'
+docker_compose_root: '/docker/projects'
+docker_appdata_root: '/docker/appdata'
 
 docker_install_group: "{{ docker_group }}"
 docker_install_gid: "{{ docker_group_gid }}"
@@ -15,11 +17,11 @@ docker_swarm_bootstrap_overlay_network_prefix: "172.30.0"
 docker_swarm_bootstrap_bridge_network_name: "default-bridge"
 docker_swarm_bootstrap_bridge_network_prefix: "172.20.0"
 
-docker_project_create_compose_root: '/docker/projects'
-docker_project_create_appdata_root: '/docker/appdata'
+docker_project_create_compose_root: "{{ docker_compose_root }}"
+docker_project_create_appdata_root: "{{ docker_appdata_root }}"
 docker_project_create_user: "{{ docker_user }}"
 docker_project_create_group: "{{ docker_group }}"
 
-docker_project_orphan_compose_root: "{{ docker_project_create_compose_root }}"
+docker_project_orphan_compose_root: "{{ docker_compose_root }}"
 docker_project_orphan_projects_dict: "{{ docker_projects }}"
 ...
