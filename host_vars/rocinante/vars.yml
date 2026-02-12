@@ -23,7 +23,7 @@ igpu_passthrough_id: '8086:46a6'
 kvm_install_disk_pool_name: "{{ libvirt_disk_pool_name }}"
 kvm_install_extra_pool_name: "{{ libvirt_extra_pool_name }}"
 kvm_install_extra_pool_path: "{{ libvirt_extra_pool_path }}"
-kvm_install_extra_disk_uuid: '4476a012-19b2-4305-9333-3defb94ab9e8'
+kvm_install_extra_disk_uuid: 'deaafcaa-37dc-44fd-b320-71808c4d76a0'
 
 basevm_create_sudo_user: "holden"
 basevm_create_debian_root_password: "{{ temp_root_pwd }}"
