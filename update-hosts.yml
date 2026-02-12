@@ -1,0 +1,55 @@
+---
+- name: Handle updates
+  hosts: all
+  become: true
+  serial: 1
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 0
+      register: apt_update_result
+
+    - name: Check for upgradable packages
+      ansible.builtin.shell: set -o pipefail && apt list --upgradable 2>/dev/null | grep -v "^Listing"
+      register: upgradable_packages
+      changed_when: false
+      failed_when: false
+
+    - name: Display upgradable packages
+      ansible.builtin.debug:
+        msg: "{{ upgradable_packages.stdout_lines }}"
+      when: upgradable_packages.stdout_lines | length > 0
+
+    - name: Show upgrade summary
+      ansible.builtin.debug:
+        msg: "{{ upgradable_packages.stdout_lines | length }} packages can be upgraded"
+      when: upgradable_packages.stdout_lines | length > 0
+
+    - name: Pause for confirmation (upgrade)
+      ansible.builtin.pause:
+        prompt: "Do you want to proceed with upgrading {{ upgradable_packages.stdout_lines | length }} packages? (yes/no)"
+      register: upgrade_confirmation
+      when: upgradable_packages.stdout_lines | length > 0
+
+    - name: Upgrade packages
+      ansible.builtin.apt:
+        upgrade: safe
+        update_cache: false
+      register: upgrade_result
+      when:
+        - upgradable_packages.stdout_lines | length > 0
+        - upgrade_confirmation.user_input | default('no') | lower == 'yes'
+
+    - name: Pause for confirmation (reboot)
+      ansible.builtin.pause:
+        prompt: "Do you want to reboot? (yes/no)"
+      register: reboot_confirmation
+      when: upgrade_result is changed # noqa: no-handler
+
+    - name: Reboot
+      ansible.builtin.reboot:
+      when:
+        - upgradable_packages.stdout_lines | length > 0
+        - reboot_confirmation.user_input | default('no') | lower == 'yes'
+...
