@@ -1,8 +1,10 @@
 # Direct connection interface
 iface {{ ip_direct_setup_physical_interface }} inet manual
+    mtu 9000
 
 auto {{ ip_direct_setup_bridge_interface }}
 iface {{ ip_direct_setup_bridge_interface }} inet static
+    mtu 9000
     bridge_ports {{ ip_direct_setup_physical_interface }}
     bridge_stp off
     bridge_fd 0

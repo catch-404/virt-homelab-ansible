@@ -6,7 +6,6 @@
     owner: root
     group: root
     mode: '0644'
-    backup: true
     validate: '/usr/sbin/ifup --no-act %s'
   notify: Restart networking
 ...

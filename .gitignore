@@ -5,4 +5,4 @@ secrets*
 .vscode
 .ansible
 docker_projects
-templates/
+/templates/
