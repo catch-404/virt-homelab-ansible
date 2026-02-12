@@ -32,6 +32,15 @@ vm_definitions:
         target: 'vdb'
         template: 'extra_disk.xml.j2'
         vol_template: 'extra_vol.xml.j2'
+      - suffix: 'transcodes'
+        pool: "{{ libvirt_extra_pool_name }}"
+        mountpoint: '/temp'
+        gid: "{{ docker_group_gid | default(ansible_user) }}"
+        mode: '2770'
+        size: '64'
+        target: 'vdc'
+        template: 'extra_disk.xml.j2'
+        vol_template: 'extra_vol.xml.j2'
     nfs_mount: true
   canterbury:
     template: 'vm.xml.j2'
