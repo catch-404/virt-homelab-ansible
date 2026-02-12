@@ -14,6 +14,7 @@
     owner: "{{ docker_project_create_user }}"
     group: "{{ docker_project_create_group }}"
     mode: '2770'
+  when: docker_project_create_appdata_presence
 
 - name: Create container subdirectories (if multi-containers project)
   ansible.builtin.file:
