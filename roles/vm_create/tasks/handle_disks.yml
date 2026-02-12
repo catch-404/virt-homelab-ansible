@@ -106,9 +106,25 @@
   when: vm_create_vm_was_recreated is defined and vm_create_vm_was_recreated is changed
 
 - name: "Attach disk [{{ vm_name }}]"
-  ansible.builtin.command: virsh attach-device {{ vm_name }} {{ extra_disk_xml }} --current
-  changed_when: true
+  ansible.builtin.shell: |
+    set -o pipefail
+    virsh attach-device {{ vm_name }} {{ extra_disk_xml }} --config
+    if virsh domstate {{ vm_name }} | grep -q 'running'; then
+      was_running=true
+      virsh shutdown {{ vm_name }} || exit 1
+      until virsh domstate {{ vm_name }} | grep -q 'shut off'; do
+        [[ "${PIPESTATUS[0]}" -ne 0 ]] && exit 3
+        sleep 1
+      done
+    fi
+    [[ ${was_running:-} ]] && virsh start {{ vm_name }}
+    exit 0
+  args:
+    executable: /bin/bash
+  async: 300
+  poll: 5
   register: vm_create_attach_result
+  changed_when: true
   failed_when:
     - vm_create_attach_result.rc != 0
     - "'duplicated for disk sources' not in vm_create_attach_result.stderr"
